@@ -1,0 +1,247 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>MAZE RUN — Retro Pixel Maze Game</title>
+    <!-- Retro Pixel Google Font -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&family=Silkscreen:wght@400;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+    <div id="crt-overlay"></div>
+
+    <!-- Main Game Container -->
+    <main id="app-container">
+        
+        <!-- ================= START SCREEN ================= -->
+        <section id="screen-start" class="screen">
+            <div class="arcade-card">
+                <div class="logo-container">
+                    <div class="pixel-badge">RETRO ARCADE</div>
+                    <h1 class="game-title">
+                        <span class="neon-cyan">MAZE</span>
+                        <span class="neon-yellow">RUN</span>
+                    </h1>
+                    <p class="game-tagline">SCHOOL TECH EVENT EDITION</p>
+                </div>
+
+                <div class="title-preview-art">
+                    <div class="pixel-sprite hero-bounce">🏃</div>
+                    <div class="pixel-sprite key-float">🔑</div>
+                    <div class="pixel-sprite monster-peek">👾</div>
+                    <div class="pixel-sprite portal-spin">🌀</div>
+                </div>
+
+                <div class="menu-actions">
+                    <button id="btn-start-game" class="btn btn-primary btn-large glow-btn">
+                        ▶ START GAME
+                    </button>
+                    <button id="btn-how-to-play" class="btn btn-secondary">
+                        📖 HOW TO PLAY
+                    </button>
+                </div>
+
+                <div class="level-badges-preview">
+                    <div class="level-pill pill-l1">LEVEL 1: EASY</div>
+                    <div class="level-pill pill-l2">LEVEL 2: MEDIUM</div>
+                    <div class="level-pill pill-l3">LEVEL 3: HARD</div>
+                </div>
+
+                <footer class="start-footer">
+                    <p>Designed for Middle School Tech Event • Keyboard & Touch Ready</p>
+                </footer>
+            </div>
+        </section>
+
+        <!-- ================= GAMEPLAY SCREEN ================= -->
+        <section id="screen-game" class="screen hidden">
+            <!-- HUD Header -->
+            <header id="game-hud">
+                <div class="hud-top-row">
+                    <div class="hud-item hud-level">
+                        <span id="hud-level-title" class="hud-highlight">LEVEL 1: ROOKIE RUN</span>
+                    </div>
+                    <div class="hud-item hud-stats">
+                        <div class="stat-box"><span class="stat-icon">⏱️</span> <span id="hud-timer">00:00.0</span></div>
+                        <div class="stat-box"><span class="stat-icon">👟</span> <span id="hud-steps">Steps: 0</span></div>
+                    </div>
+                </div>
+
+                <div class="hud-status-row">
+                    <div class="status-indicators">
+                        <div id="hud-key" class="status-tag">🔑 <span class="badge badge-warning">LOCKED</span></div>
+                        <div id="hud-exit" class="status-tag">🚪 <span class="badge badge-danger">LOCKED</span></div>
+                    </div>
+
+                    <div class="hud-controls">
+                        <button id="btn-hint" class="btn btn-sm btn-hint" title="Reveal shortest path (3 per level)">
+                            💡 Hint (3/3)
+                        </button>
+                        <button id="btn-restart" class="btn btn-sm btn-icon" title="Restart Level (R)">
+                            🔄 <span class="btn-label">Restart</span>
+                        </button>
+                        <button id="btn-pause" class="btn btn-sm btn-icon" title="Pause Game (P or Esc)">
+                            ⏸️ <span class="btn-label">Pause</span>
+                        </button>
+                        <button id="btn-mute" class="btn btn-sm btn-icon" title="Toggle Sound">
+                            🔊 <span class="btn-label">Sound</span>
+                        </button>
+                    </div>
+                </div>
+            </header>
+
+            <!-- Maze Canvas Area -->
+            <div id="canvas-container">
+                <canvas id="game-canvas"></canvas>
+                <!-- Toast notification banner -->
+                <div id="toast" class="toast hidden"></div>
+            </div>
+
+            <!-- Virtual On-Screen D-Pad (Touch & Mobile) -->
+            <footer id="mobile-controls">
+                <div class="dpad-container">
+                    <button id="dpad-up" class="dpad-btn dpad-up" aria-label="Move Up">▲</button>
+                    <div class="dpad-middle-row">
+                        <button id="dpad-left" class="dpad-btn dpad-left" aria-label="Move Left">◀</button>
+                        <div class="dpad-center"></div>
+                        <button id="dpad-right" class="dpad-btn dpad-right" aria-label="Move Right">▶</button>
+                    </div>
+                    <button id="dpad-down" class="dpad-btn dpad-down" aria-label="Move Down">▼</button>
+                </div>
+            </footer>
+        </section>
+
+        <!-- ================= MODALS & OVERLAYS ================= -->
+
+        <!-- How to Play Modal -->
+        <div id="modal-how-to-play" class="modal-backdrop hidden">
+            <div class="modal-dialog">
+                <div class="modal-header">
+                    <h2>HOW TO PLAY</h2>
+                    <button id="btn-close-how-to-play" class="btn-close">✕</button>
+                </div>
+                <div class="modal-body instructions-grid">
+                    <div class="rule-card">
+                        <div class="rule-icon">🕹️</div>
+                        <h3>CONTROLS</h3>
+                        <p>Use <strong>Arrow Keys</strong> or <strong>WASD</strong> to move.</p>
+                        <p>On mobile phones, use the on-screen <strong>Directional Pad</strong> or swipe!</p>
+                    </div>
+                    <div class="rule-card">
+                        <div class="rule-icon">🔑</div>
+                        <h3>COLLECT THE KEY</h3>
+                        <p>The exit portal is locked with a heavy padlock.</p>
+                        <p>Locate and collect the <strong>Golden Key</strong> to unlock the exit portal!</p>
+                    </div>
+                    <div class="rule-card">
+                        <div class="rule-icon">👾</div>
+                        <h3>DODGE MONSTERS</h3>
+                        <p>In Levels 2 &amp; 3, patrol monsters guard the halls.</p>
+                        <p>Touching a monster resets you to the start! Sneak past when they turn.</p>
+                    </div>
+                    <div class="rule-card">
+                        <div class="rule-icon">💡</div>
+                        <h3>HINT SYSTEM</h3>
+                        <p>Stuck in the maze? You get <strong>3 Hints</strong> per level.</p>
+                        <p>Press <strong>💡 Hint</strong> or press <strong>H</strong> to light up the path!</p>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button class="btn btn-primary" onclick="document.getElementById('btn-close-how-to-play').click()">GOT IT!</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Pause Modal -->
+        <div id="modal-pause" class="modal-backdrop hidden">
+            <div class="modal-dialog small-dialog">
+                <div class="modal-header">
+                    <h2>GAME PAUSED</h2>
+                </div>
+                <div class="modal-body pause-actions">
+                    <button id="btn-resume" class="btn btn-primary btn-block">▶ RESUME</button>
+                    <button id="btn-pause-restart" class="btn btn-secondary btn-block">🔄 RESTART LEVEL</button>
+                    <button id="btn-pause-menu" class="btn btn-outline btn-block">🏠 MAIN MENU</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Level Complete Modal -->
+        <div id="modal-level-complete" class="modal-backdrop hidden">
+            <div class="modal-dialog">
+                <div class="modal-header">
+                    <h2 id="complete-title" class="neon-green">LEVEL COMPLETED!</h2>
+                </div>
+                <div class="modal-body summary-body">
+                    <div class="stars-display" id="complete-stars">★★★</div>
+                    
+                    <div class="stats-table">
+                        <div class="stat-row">
+                            <span class="stat-name">⏱️ Completion Time:</span>
+                            <span id="complete-time" class="stat-val">00:00.0</span>
+                        </div>
+                        <div class="stat-row">
+                            <span class="stat-name">👟 Total Steps:</span>
+                            <span id="complete-steps" class="stat-val">0</span>
+                        </div>
+                        <div class="stat-row">
+                            <span class="stat-name">⭐ Level Score:</span>
+                            <span id="complete-score" class="stat-val neon-yellow">0</span>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button id="btn-next-level" class="btn btn-primary btn-large glow-btn">NEXT LEVEL ➔</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Victory Modal -->
+        <div id="modal-victory" class="modal-backdrop hidden">
+            <div class="modal-dialog victory-dialog">
+                <div class="modal-header">
+                    <div class="trophy-emoji">🏆</div>
+                    <h2 class="neon-yellow">CONGRATULATIONS!</h2>
+                    <p class="victory-subtitle">YOU CONQUERED ALL 3 MAZES!</p>
+                </div>
+                <div class="modal-body summary-body">
+                    <div class="rank-badge-box">
+                        <div class="rank-label">FINAL RANK</div>
+                        <div id="victory-rank" class="rank-title">S: MAZE LEGEND</div>
+                    </div>
+
+                    <div class="stats-table">
+                        <div class="stat-row">
+                            <span class="stat-name">⏱️ Total Time:</span>
+                            <span id="victory-total-time" class="stat-val">00:00.0</span>
+                        </div>
+                        <div class="stat-row">
+                            <span class="stat-name">👟 Total Steps:</span>
+                            <span id="victory-total-steps" class="stat-val">0</span>
+                        </div>
+                        <div class="stat-row highlight-row">
+                            <span class="stat-name">⭐ TOTAL SCORE:</span>
+                            <span id="victory-total-score" class="stat-val neon-green">0</span>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer victory-buttons">
+                    <button id="btn-play-again" class="btn btn-primary btn-large glow-btn">🔄 PLAY AGAIN</button>
+                    <button id="btn-victory-menu" class="btn btn-secondary">🏠 MAIN MENU</button>
+                </div>
+            </div>
+        </div>
+
+    </main>
+
+    <!-- Scripts -->
+    <script src="js/audio.js"></script>
+    <script src="js/maze-data.js"></script>
+    <script src="js/pathfinder.js"></script>
+    <script src="js/sprites.js"></script>
+    <script src="js/game.js"></script>
+</body>
+</html>

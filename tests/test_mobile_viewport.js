@@ -12,10 +12,17 @@ async function testMobileViewport() {
     console.log("Testing mobile viewport responsiveness (390x844)...");
     const screenshotsDir = path.join(__dirname, 'screenshots');
 
+    const testProfileDir = path.join(__dirname, '.mobile_test_profile_' + Date.now());
     const browser = await puppeteer.launch({
         executablePath,
         headless: 'new',
-        args: ['--no-sandbox', '--disable-setuid-sandbox']
+        userDataDir: testProfileDir,
+        args: [
+            '--no-sandbox',
+            '--disable-setuid-sandbox',
+            '--disable-gpu',
+            '--no-first-run'
+        ]
     });
 
     const page = await browser.newPage();
@@ -56,8 +63,8 @@ async function testMobileViewport() {
 
     console.log("Mobile layout analysis:", JSON.stringify(layout, null, 2));
 
-    // Tap D-Pad right button to test touch
-    await page.tap('#dpad-right');
+    // Tap D-Pad down button to test touch (down from (1,1) is open tile (1,2))
+    await page.tap('#dpad-down');
     await new Promise(r => setTimeout(r, 200));
     const steps = await page.evaluate(() => window.game.steps);
     console.log(`Mobile tap registered steps: ${steps}`);
@@ -66,6 +73,11 @@ async function testMobileViewport() {
     await page.screenshot({ path: path.join(screenshotsDir, 'mobile_03_gameplay.png') });
 
     await browser.close();
+
+    try {
+        fs.rmSync(testProfileDir, { recursive: true, force: true });
+    } catch (e) {}
+
     console.log("Mobile responsiveness test passed successfully! ✓");
 }
 

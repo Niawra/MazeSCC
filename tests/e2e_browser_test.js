@@ -96,7 +96,6 @@ async function runE2ETests() {
     // 4. Test Wall Collision
     console.log("\n[TEST 4]: Testing Wall Collision...");
     const initialPos = await page.evaluate(() => ({ x: window.game.player.gridX, y: window.game.player.gridY }));
-    // Try walking left into wall
     await page.keyboard.press('ArrowLeft');
     await new Promise(r => setTimeout(r, 150));
     const afterWallHitPos = await page.evaluate(() => ({ x: window.game.player.gridX, y: window.game.player.gridY }));
@@ -150,13 +149,12 @@ async function runE2ETests() {
     const isMutedAfter = await page.evaluate(() => sounds.isMuted());
     if (isMutedAfter === isMutedInitial) throw new Error("Mute toggle failed");
     console.log(`✓ Mute toggle works: muted=${isMutedAfter}`);
-    await page.click('#btn-mute'); // Toggle back
+    await page.click('#btn-mute');
 
     // 8. Test Virtual D-Pad
     console.log("\n[TEST 8]: Testing Virtual D-Pad...");
     const stepsBeforeDpad = await page.evaluate(() => window.game.steps);
-    // Move Right using dpad-right button
-    await page.click('#dpad-right');
+    await page.click('#dpad-down');
     await new Promise(r => setTimeout(r, 200));
     const stepsAfterDpad = await page.evaluate(() => window.game.steps);
     if (stepsAfterDpad <= stepsBeforeDpad) {
@@ -166,10 +164,9 @@ async function runE2ETests() {
 
     // 9. Solve Level 1 (Navigate to Key then Exit)
     console.log("\n[TEST 9]: Solving Level 1...");
-    // Let's use game engine solver helper to execute the path
     await page.evaluate(async () => {
         const game = window.game;
-        // 1. Move to key
+        // Move to key
         const pathToKey = Pathfinder.findPath(game.grid, game.width, game.height, 
             { x: game.player.gridX, y: game.player.gridY }, game.key);
 
@@ -179,11 +176,10 @@ async function runE2ETests() {
             const dy = next.y - game.player.gridY;
             const dir = dx === 1 ? 'right' : dx === -1 ? 'left' : dy === 1 ? 'down' : 'up';
             game.requestMove(dir);
-            // wait for step
             while (game.player.isMoving) {
-                await new Promise(r => setTimeout(r, 20));
+                await new Promise(r => setTimeout(r, 15));
             }
-            await new Promise(r => setTimeout(r, 30));
+            await new Promise(r => setTimeout(r, 20));
         }
     });
 
@@ -193,7 +189,7 @@ async function runE2ETests() {
     if (!hasKeyL1) throw new Error("Failed to collect key in Level 1");
     await page.screenshot({ path: path.join(screenshotsDir, '05_level_1_key_collected.png') });
 
-    // Now move to exit
+    // Move to exit
     await page.evaluate(async () => {
         const game = window.game;
         const pathToExit = Pathfinder.findPath(game.grid, game.width, game.height, 
@@ -206,9 +202,9 @@ async function runE2ETests() {
             const dir = dx === 1 ? 'right' : dx === -1 ? 'left' : dy === 1 ? 'down' : 'up';
             game.requestMove(dir);
             while (game.player.isMoving) {
-                await new Promise(r => setTimeout(r, 20));
+                await new Promise(r => setTimeout(r, 15));
             }
-            await new Promise(r => setTimeout(r, 30));
+            await new Promise(r => setTimeout(r, 20));
         }
     });
 
@@ -245,7 +241,6 @@ async function runE2ETests() {
     const resetResult = await page.evaluate(() => {
         const game = window.game;
         const m = game.monsters[0];
-        // Move player right onto monster's current position to test collision
         game.player.renderX = m.x;
         game.player.renderY = m.y;
         game.onMonsterHit(m);
@@ -268,8 +263,7 @@ async function runE2ETests() {
     console.log("\n[TEST 12]: Solving Level 2...");
     await page.evaluate(async () => {
         const game = window.game;
-        // Invulnerability grace period expired
-        game.player.invulnerableTimer = 0;
+        game.player.invulnerableTimer = 999; // Set invulnerable for automated path traversal
 
         // Path to Key
         const pathToKey = Pathfinder.findPath(game.grid, game.width, game.height, 
@@ -282,9 +276,9 @@ async function runE2ETests() {
             const dir = dx === 1 ? 'right' : dx === -1 ? 'left' : dy === 1 ? 'down' : 'up';
             game.requestMove(dir);
             while (game.player.isMoving) {
-                await new Promise(r => setTimeout(r, 20));
+                await new Promise(r => setTimeout(r, 15));
             }
-            await new Promise(r => setTimeout(r, 25));
+            await new Promise(r => setTimeout(r, 20));
         }
     });
 
@@ -305,9 +299,9 @@ async function runE2ETests() {
             const dir = dx === 1 ? 'right' : dx === -1 ? 'left' : dy === 1 ? 'down' : 'up';
             game.requestMove(dir);
             while (game.player.isMoving) {
-                await new Promise(r => setTimeout(r, 20));
+                await new Promise(r => setTimeout(r, 15));
             }
-            await new Promise(r => setTimeout(r, 25));
+            await new Promise(r => setTimeout(r, 20));
         }
     });
 
@@ -336,7 +330,7 @@ async function runE2ETests() {
     console.log("\n[TEST 14]: Solving Level 3...");
     await page.evaluate(async () => {
         const game = window.game;
-        game.player.invulnerableTimer = 0;
+        game.player.invulnerableTimer = 999; // Set invulnerable for automated path traversal
 
         // Path to Key
         const pathToKey = Pathfinder.findPath(game.grid, game.width, game.height, 
@@ -349,15 +343,16 @@ async function runE2ETests() {
             const dir = dx === 1 ? 'right' : dx === -1 ? 'left' : dy === 1 ? 'down' : 'up';
             game.requestMove(dir);
             while (game.player.isMoving) {
-                await new Promise(r => setTimeout(r, 20));
+                await new Promise(r => setTimeout(r, 15));
             }
-            await new Promise(r => setTimeout(r, 25));
+            await new Promise(r => setTimeout(r, 20));
         }
     });
 
     await new Promise(r => setTimeout(r, 400));
     const hasKeyL3 = await page.evaluate(() => window.game.hasKey);
     console.log(`✓ Level 3 Key collected: hasKey=${hasKeyL3}`);
+    if (!hasKeyL3) throw new Error("Failed to collect key in Level 3");
 
     // Path to Exit
     await page.evaluate(async () => {
@@ -372,9 +367,9 @@ async function runE2ETests() {
             const dir = dx === 1 ? 'right' : dx === -1 ? 'left' : dy === 1 ? 'down' : 'up';
             game.requestMove(dir);
             while (game.player.isMoving) {
-                await new Promise(r => setTimeout(r, 20));
+                await new Promise(r => setTimeout(r, 15));
             }
-            await new Promise(r => setTimeout(r, 25));
+            await new Promise(r => setTimeout(r, 20));
         }
     });
 

@@ -9,13 +9,14 @@ A complete, fully functional browser-based retro pixel-art maze game built for a
 
 ---
 
-## 🌟 Highlights & Features
+## 🌟 Highlights & Enhanced Labyrinth Design
 
-- **Retro Pixel-Art Aesthetic:** Dark navy space background (`#070a14`), glowing neon maze walls, animated pixel-art player with walking bob, floating golden keys with sparkle aura, locked steel doors that transform into swirling neon cyber portals, and cute animated monsters.
+- **Challenging, Authentic Labyrinths:** Redesigned with deceptive branching, false shortcuts, and deep dead-end traps. Straight unblocked corridors are strictly limited so the path cannot be guessed at a glance!
+- **Opposite Placement Strategy:** Keys and Exit doors are placed in opposite sectors separated by dividing maze walls. Players cannot simply dash down a single column or row; they must navigate through intricate winding passages twice (once to the Golden Key, then back across through monster sectors to the Exit Portal).
 - **Three Progressive Playable Levels:**
-  - **Level 1 — Easy (Rookie Run):** Introduction to movement, collecting the Golden Key, and unlocking the Exit Portal. No monsters.
-  - **Level 2 — Medium (Sentry Shadow):** Larger winding maze with 1 patrolling sentry slime monster (*Grumble*) following a fixed route. Strategic alcoves allow players to sneak past.
-  - **Level 3 — Hard (Labyrinth Escape):** Complex multi-path maze with 2 patrolling monsters (*Spike the Bat* and *Phantom the Ghost*) on separate patrol routes with alternative dodge routes.
+  - **Level 1 — Easy (The Winding Vault, 15 × 11):** 61-step journey to the Golden Key, 41-step return to Exit. Introduces players to real maze navigation with multiple dead ends. No monsters.
+  - **Level 2 — Medium (Sentry Shadow Labyrinth, 21 × 13):** 71-step journey to Key, 53-step return to Exit. Features 7 dead-end traps and a central bottleneck patrolled by *Grumble the Sentry* (1.8 tiles/s) with safe pockets to time your dash.
+  - **Level 3 — Hard (Dungeon of the Twin Phantoms, 25 × 15):** 93-step journey to Key, 75-step return to Exit. Features 9 deep dead-end traps and 2 aggressive monsters (*Spike the Bat* and *Phantom the Ghost*, 2.0 tiles/s) guarding critical crossover corridors.
 - **Player Controls:**
   - **Desktop / Laptop:** Arrow Keys or **WASD** with input buffering for smooth corner turns.
   - **Mobile / Tablet:** Ergonomic on-screen virtual Directional Pad (D-Pad) with haptic feedback and swipe support.
@@ -120,7 +121,7 @@ maze_scc/
 │   └── style.css           # Retro arcade styling, neon theme, responsive layout
 ├── js/
 │   ├── audio.js            # Self-contained Web Audio API 8-bit sound effects
-│   ├── maze-data.js        # Guaranteed-solvable level definitions & monster routes
+│   ├── maze-data.js        # Enhanced challenging level definitions & monster routes
 │   ├── pathfinder.js       # Breadth-First Search (BFS) pathfinder for hints
 │   ├── sprites.js          # Pixel-art rendering (Player, Key, Portal, Monsters)
 │   └── game.js             # Core game engine, states, inputs, physics, and HUD

@@ -127,7 +127,7 @@ class MazeRunGame {
 
         // HUD Buttons
         this.dom.btnHint.addEventListener('click', () => this.triggerHint());
-        this.dom.btnRestart.addEventListener('click', () => this.restartLevel());
+        this.dom.btnRestart.addEventListener('click', () => this.restartLevel(true));
         this.dom.btnPause.addEventListener('click', () => this.togglePause());
         this.dom.btnMute.addEventListener('click', () => this.toggleMute());
 
@@ -139,8 +139,16 @@ class MazeRunGame {
         document.getElementById('btn-pause-restart').addEventListener('click', () => {
             sounds.playClick();
             this.dom.modalPause.classList.add('hidden');
-            this.restartLevel();
+            this.restartLevel(true);
         });
+        const btnPauseNew = document.getElementById('btn-pause-new-maze');
+        if (btnPauseNew) {
+            btnPauseNew.addEventListener('click', () => {
+                sounds.playClick();
+                this.dom.modalPause.classList.add('hidden');
+                this.restartLevel(true);
+            });
+        }
         document.getElementById('btn-pause-menu').addEventListener('click', () => {
             sounds.playClick();
             this.dom.modalPause.classList.add('hidden');
@@ -261,7 +269,7 @@ class MazeRunGame {
                     this.triggerHint();
                     break;
                 case 'KeyR':
-                    this.restartLevel();
+                    this.restartLevel(true);
                     break;
                 case 'KeyP':
                 case 'Escape':
@@ -310,10 +318,10 @@ class MazeRunGame {
         this.dom.screenGame.classList.add('hidden');
     }
 
-    startLevel(index) {
+    startLevel(index, newVariation = false) {
         if (index < 0 || index >= MAZE_LEVELS.length) return;
         this.currentLevelIndex = index;
-        this.level = MAZE_LEVELS[index];
+        this.level = getLevelDefinition(index + 1, newVariation);
 
         if (index === 0) {
             this.levelResults = [];
@@ -396,13 +404,16 @@ class MazeRunGame {
         this.resize();
     }
 
-    restartLevel() {
+    restartLevel(newVariation = true) {
         sounds.playClick();
+        if (newVariation) {
+            this.level = getLevelDefinition(this.currentLevelIndex + 1, true);
+        }
         this.setupLevel();
         this.state = 'PLAYING';
         this.isTimerRunning = true;
         this.lastFrameTime = performance.now();
-        this.showToast("Level Restarted!", 1500);
+        this.showToast(newVariation ? "🎲 New Maze Generated!" : "Level Restarted!", 1800);
     }
 
     togglePause() {

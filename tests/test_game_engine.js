@@ -1,5 +1,6 @@
 // Comprehensive Unit & Engine test suite for MAZE RUN
-const { MAZE_LEVELS } = require('../js/maze-data');
+const { MAZE_LEVELS, getLevelDefinition } = require('../js/maze-data');
+const { MazeGenerator } = require('../js/maze-generator');
 const { Pathfinder } = require('../js/pathfinder');
 
 class MazeEngineTest {
@@ -205,7 +206,7 @@ console.log("\n--- Testing Level 2 ---");
 const engine2 = new MazeEngineTest(MAZE_LEVELS[1]);
 assert(engine2.monsters.length === 1, "Level 2 has 1 monster");
 const m1 = engine2.monsters[0];
-assert(m1.waypoints.length === 7, "Monster Grumble has 7 waypoints");
+assert(m1.waypoints.length === 5, "Monster Grumble has 5 waypoints");
 
 engine2.stepMonsters();
 assert(m1.wpIndex === 1, "Monster moved to waypoint 1");
@@ -241,6 +242,38 @@ assert(engine3.steps === 0, "Restart resets step counter to 0");
 assert(engine3.hintsRemaining === 3, "Restart resets hints to 3");
 assert(engine3.hasKey === false, "Restart resets key state");
 assert(engine3.player.x === engine3.start.x, "Restart resets player position");
+
+// Procedural Variation & Generator Tests
+console.log("\n--- Testing Procedural Variations & Layout Diversity ---");
+const var1 = getLevelDefinition(1, true);
+assert(var1 !== null && var1.map.length === 13 && var1.map[0].length === 17, "Level 1 procedural variation generated with correct dimensions 17x13");
+const engineVar1 = new MazeEngineTest(var1);
+assert(engineVar1.start && engineVar1.key && engineVar1.exit, "Level 1 variation has Start, Key, and Exit");
+const pathVar1Key = Pathfinder.findPath(engineVar1.grid, engineVar1.width, engineVar1.height, engineVar1.start, engineVar1.key);
+const pathVar1Exit = Pathfinder.findPath(engineVar1.grid, engineVar1.width, engineVar1.height, engineVar1.key, engineVar1.exit);
+assert(pathVar1Key !== null && pathVar1Exit !== null, "Level 1 variation is fully solvable via BFS");
+
+const var2 = getLevelDefinition(2, true);
+assert(var2 !== null && var2.map.length === 15 && var2.map[0].length === 23, "Level 2 procedural variation generated with correct dimensions 23x15");
+assert(var2.monsters && var2.monsters.length === 1, "Level 2 variation has 1 monster");
+const engineVar2 = new MazeEngineTest(var2);
+const pathVar2Key = Pathfinder.findPath(engineVar2.grid, engineVar2.width, engineVar2.height, engineVar2.start, engineVar2.key);
+const pathVar2Exit = Pathfinder.findPath(engineVar2.grid, engineVar2.width, engineVar2.height, engineVar2.key, engineVar2.exit);
+assert(pathVar2Key !== null && pathVar2Exit !== null, "Level 2 variation is fully solvable via BFS");
+
+const var3 = getLevelDefinition(3, true);
+assert(var3 !== null && var3.map.length === 17 && var3.map[0].length === 27, "Level 3 procedural variation generated with correct dimensions 27x17");
+assert(var3.monsters && var3.monsters.length === 2, "Level 3 variation has 2 monsters");
+const engineVar3 = new MazeEngineTest(var3);
+const pathVar3Key = Pathfinder.findPath(engineVar3.grid, engineVar3.width, engineVar3.height, engineVar3.start, engineVar3.key);
+const pathVar3Exit = Pathfinder.findPath(engineVar3.grid, engineVar3.width, engineVar3.height, engineVar3.key, engineVar3.exit);
+assert(pathVar3Key !== null && pathVar3Exit !== null, "Level 3 variation is fully solvable via BFS");
+
+// Verify that multiple generations yield diverse layouts
+const sampleA = MazeGenerator.generateLevel(2);
+const sampleB = MazeGenerator.generateLevel(2);
+const mapsAreIdentical = sampleA.map.join('') === sampleB.map.join('');
+assert(!mapsAreIdentical, "Procedural generator produces unique layout variations on subsequent runs");
 
 console.log("\n==========================================");
 console.log(`SUMMARY: ${passedTests} / ${totalTests} tests passed.`);

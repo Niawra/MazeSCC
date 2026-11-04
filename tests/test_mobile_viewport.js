@@ -63,8 +63,8 @@ async function testMobileViewport() {
 
     console.log("Mobile layout analysis:", JSON.stringify(layout, null, 2));
 
-    // Tap D-Pad down button to test touch (down from (1,1) is open tile (1,2))
-    await page.tap('#dpad-down');
+    // Tap D-Pad right button to test touch (right from (1,1) is open tile (2,1))
+    await page.tap('#dpad-right');
     await new Promise(r => setTimeout(r, 200));
     const steps = await page.evaluate(() => window.game.steps);
     console.log(`Mobile tap registered steps: ${steps}`);

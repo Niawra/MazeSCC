@@ -21,9 +21,11 @@ async function runE2ETests() {
         fs.mkdirSync(screenshotsDir, { recursive: true });
     }
 
+    const profileDir = path.join(__dirname, '.e2e_profile_' + Date.now());
     const browser = await puppeteer.launch({
         executablePath,
         headless: 'new',
+        userDataDir: profileDir,
         args: ['--no-sandbox', '--disable-setuid-sandbox', '--window-size=1280,900']
     });
 
@@ -154,13 +156,30 @@ async function runE2ETests() {
     // 8. Test Virtual D-Pad
     console.log("\n[TEST 8]: Testing Virtual D-Pad...");
     const stepsBeforeDpad = await page.evaluate(() => window.game.steps);
-    await page.click('#dpad-down');
+    await page.click('#dpad-right');
     await new Promise(r => setTimeout(r, 200));
     const stepsAfterDpad = await page.evaluate(() => window.game.steps);
     if (stepsAfterDpad <= stepsBeforeDpad) {
         throw new Error("D-Pad button click did not move player or increment step counter");
     }
     console.log("✓ On-screen Virtual D-Pad moved player successfully");
+
+    // 8.5 Test Restart Button with Procedural Layout Variation
+    console.log("\n[TEST 8.5]: Testing Restart Level with Layout Variation...");
+    const mapBeforeRestart = await page.evaluate(() => window.game.level.map.join(''));
+    await page.click('#btn-restart');
+    await new Promise(r => setTimeout(r, 400));
+    const mapAfterRestart = await page.evaluate(() => window.game.level.map.join(''));
+    const stepsAfterRestart = await page.evaluate(() => window.game.steps);
+    const hintsAfterRestart = await page.evaluate(() => window.game.hintsRemaining);
+    if (stepsAfterRestart !== 0 || hintsAfterRestart !== 3) {
+        throw new Error("Restart button failed to reset steps or hints!");
+    }
+    if (mapBeforeRestart !== mapAfterRestart) {
+        console.log("✓ Restart generated fresh procedural layout variation!");
+    } else {
+        console.log("✓ Restart cleanly reset level state");
+    }
 
     // 9. Solve Level 1 (Navigate to Key then Exit)
     console.log("\n[TEST 9]: Solving Level 1...");
@@ -228,11 +247,12 @@ async function runE2ETests() {
     if (monsterCountL2 !== 1) throw new Error(`Expected 1 monster in Level 2, got ${monsterCountL2}`);
 
     // Wait 1 second and verify monster is moving along patrol route
-    const monsterX1 = await page.evaluate(() => window.game.monsters[0].x);
+    const mPos1 = await page.evaluate(() => ({ x: window.game.monsters[0].x, y: window.game.monsters[0].y }));
     await new Promise(r => setTimeout(r, 1200));
-    const monsterX2 = await page.evaluate(() => window.game.monsters[0].x);
-    console.log(`✓ Monster initial X: ${monsterX1.toFixed(2)}, later X: ${monsterX2.toFixed(2)}`);
-    if (monsterX1 === monsterX2) throw new Error("Monster did not move along its patrol route!");
+    const mPos2 = await page.evaluate(() => ({ x: window.game.monsters[0].x, y: window.game.monsters[0].y }));
+    const distMoved = Math.hypot(mPos2.x - mPos1.x, mPos2.y - mPos1.y);
+    console.log(`✓ Monster pos 1: (${mPos1.x.toFixed(2)}, ${mPos1.y.toFixed(2)}), pos 2: (${mPos2.x.toFixed(2)}, ${mPos2.y.toFixed(2)}), dist: ${distMoved.toFixed(2)}`);
+    if (distMoved < 0.1) throw new Error("Monster did not move along its patrol route!");
 
     await page.screenshot({ path: path.join(screenshotsDir, '07_level_2_patrol.png') });
 
@@ -406,6 +426,9 @@ async function runE2ETests() {
     console.log("✓ Play Again button cleanly reset game to Level 1");
 
     await browser.close();
+    try {
+        fs.rmSync(profileDir, { recursive: true, force: true });
+    } catch (e) {}
 
     console.log("\n==================================================");
     if (consoleErrors.length > 0) {

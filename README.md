@@ -11,13 +11,14 @@ A complete, fully functional browser-based retro pixel-art maze game built for a
 
 ## 🌟 Highlights & Enhanced Labyrinth Design
 
-- **Challenging, Authentic Labyrinths:** Redesigned with deceptive branching, false shortcuts, and deep dead-end traps. Straight unblocked corridors are strictly limited so the path cannot be guessed at a glance!
+- **Tight, Dense Wall Architecture:** Zero wide-open voids or floating blocks! Every corridor is strictly 1-tile wide with continuous solid walls, crisp bounding neon contour lines, and seamless autotiling connection between adjacent wall tiles.
+- **Enclosed 3-Wall Cul-de-Sac Alcoves:** Golden Keys and Exit Portals are deeply embedded inside dead-end chambers surrounded on 3 sides by walls (`#`), with only 1 narrow entrance corridor. No shortcuts or gap-cutting allowed!
 - **Opposite Placement Strategy:** Keys and Exit doors are placed in opposite sectors separated by dividing maze walls. Players cannot simply dash down a single column or row; they must navigate through intricate winding passages twice (once to the Golden Key, then back across through monster sectors to the Exit Portal).
-- **Procedural Maze Generation & Layout Variation:** Every restart (`R` key or Restart button in HUD / Pause modal) dynamically generates a brand-new, 100% BFS-verified labyrinth with randomized organic paths, deep dead ends, and safe monster patrol corridors.
+- **Procedural Maze Generation & Layout Variation:** Every restart (`R` key or Restart button in HUD / Pause modal) dynamically generates a brand-new, 100% BFS-verified labyrinth with strictly 1-tile passages, 3-wall alcove objectives, and safe monster patrol corridors.
 - **Three Progressive Playable Levels:**
-  - **Level 1 — Easy (The Winding Vault, 17 × 13):** 73-step journey to the Golden Key, 59-step return to Exit. Introduces players to real maze navigation with multiple dead ends and non-obvious chambers. No monsters.
-  - **Level 2 — Medium (Sentry Shadow Labyrinth, 23 × 15):** 95-step journey to Key, 83-step return to Exit. Features organic asymmetric walls, deceptive loops, deep dead-end traps, and a central bottleneck patrolled by *Grumble the Sentry* (1.8 tiles/s) with safe pockets to time your dash.
-  - **Level 3 — Hard (Dungeon of the Twin Phantoms, 27 × 17):** 111-step journey to Key, 95-step return to Exit. Complex, multilayered labyrinth with 10+ deep dead-end traps and 2 aggressive sentry monsters (*Spike the Bat* and *Phantom the Ghost*, 2.0 tiles/s) guarding critical crossover corridors.
+  - **Level 1 — Easy (The Winding Vault, 17 × 13):** 85-step journey to the Golden Key, 57-step return to Exit. Introduces players to real maze navigation with multiple dead ends and non-obvious chambers. No monsters.
+  - **Level 2 — Medium (Sentry Shadow Labyrinth, 23 × 15):** 97-step journey to Key, 91-step return to Exit. Features dense asymmetric walls, deceptive loops, 11 deep dead-end traps, and a central bottleneck patrolled by *Grumble the Sentry* (1.8 tiles/s) with safe alcoves to time your dash.
+  - **Level 3 — Hard (Dungeon of the Twin Phantoms, 27 × 17):** 105-step journey to Key, 103-step return to Exit. Complex, multilayered labyrinth with 11 deep dead-end traps and 2 aggressive sentry monsters (*Spike the Bat* and *Phantom the Ghost*, 2.0 tiles/s) guarding critical crossover corridors.
 - **Player Controls:**
   - **Desktop / Laptop:** Arrow Keys or **WASD** with input buffering for smooth corner turns.
   - **Mobile / Tablet:** Ergonomic on-screen virtual Directional Pad (D-Pad) with haptic feedback and swipe support.

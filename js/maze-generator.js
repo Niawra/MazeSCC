@@ -71,7 +71,8 @@ class MazeGenerator {
     }
 
     /**
-     * Generate a verified, playable maze configuration
+     * Generate a verified, playable maze configuration with dense walls, strictly 1-tile corridors,
+     * and dead-end alcove placement for Key and Exit.
      * @param {number} levelNumber (1, 2, or 3)
      * @param {number|null} seed (optional PRNG seed)
      * @returns {Object} Complete level definition
@@ -89,12 +90,29 @@ class MazeGenerator {
             return (prng >>> 0) / 4294967296;
         }
 
-        const maxAttempts = 50;
+        const maxAttempts = 100;
         for (let attempt = 0; attempt < maxAttempts; attempt++) {
             const grid = Array.from({ length: h }, () => Array(w).fill('#'));
             const visited = Array.from({ length: h }, () => Array(w).fill(false));
 
-            // 1. Carve using DFS with turn-bias
+            function measureRun(cx, cy, dx, dy) {
+                let len = 1;
+                const sx = dx > 0 ? 1 : dx < 0 ? -1 : 0;
+                const sy = dy > 0 ? 1 : dy < 0 ? -1 : 0;
+                let x = cx + sx, y = cy + sy;
+                while (x >= 0 && x < w && y >= 0 && y < h && grid[y][x] === '.') {
+                    len++;
+                    x += sx; y += sy;
+                }
+                x = cx - sx; y = cy - sy;
+                while (x >= 0 && x < w && y >= 0 && y < h && grid[y][x] === '.') {
+                    len++;
+                    x -= sx; y -= sy;
+                }
+                return len;
+            }
+
+            // 1. Carve using pure cell lattice DFS with anti-runway turn-bias
             function carve(cx, cy, lastDx = 0, lastDy = 0) {
                 visited[cy][cx] = true;
                 grid[cy][cx] = '.';
@@ -102,13 +120,13 @@ class MazeGenerator {
                 const dirs = [
                     [0, -2], [0, 2], [-2, 0], [2, 0]
                 ];
+                dirs.sort(() => rand() - 0.5);
 
+                // Anti-runway sort: penalize continuing straight if line length exceeds 6
                 dirs.sort((a, b) => {
-                    const isStraightA = (a[0] === lastDx && a[1] === lastDy);
-                    const isStraightB = (b[0] === lastDx && b[1] === lastDy);
-                    const weightA = rand() + (isStraightA ? 0.35 : 0);
-                    const weightB = rand() + (isStraightB ? 0.35 : 0);
-                    return weightA - weightB;
+                    const runA = measureRun(cx + a[0] / 2, cy + a[1] / 2, a[0], a[1]) + 1;
+                    const runB = measureRun(cx + b[0] / 2, cy + b[1] / 2, b[0], b[1]) + 1;
+                    return (runA > 6 ? 1 : 0) - (runB > 6 ? 1 : 0);
                 });
 
                 for (const [dx, dy] of dirs) {
@@ -123,47 +141,84 @@ class MazeGenerator {
 
             carve(1, 1);
 
-            // 2. Add controlled loops based on difficulty
-            for (let y = 2; y < h - 2; y += 2) {
-                for (let x = 2; x < w - 2; x += 2) {
-                    if (grid[y][x] === '#' && rand() < profile.loopRate) {
-                        const hOpen = grid[y][x - 1] === '.' && grid[y][x + 1] === '.';
-                        const vOpen = grid[y - 1][x] === '.' && grid[y + 1][x] === '.';
-                        if ((hOpen && !vOpen) || (!hOpen && vOpen)) {
-                            grid[y][x] = '.';
+            // 2. Add controlled loop cuts on single wall edges (never on corner vertices!)
+            const loopCandidates = [];
+            for (let y = 1; y < h - 1; y++) {
+                for (let x = 1; x < w - 1; x++) {
+                    if (grid[y][x] === '#') {
+                        if (x % 2 === 1 && y % 2 === 0 && grid[y - 1][x] === '.' && grid[y + 1][x] === '.') {
+                            loopCandidates.push({ x, y });
+                        } else if (x % 2 === 0 && y % 2 === 1 && grid[y][x - 1] === '.' && grid[y][x + 1] === '.') {
+                            loopCandidates.push({ x, y });
                         }
                     }
                 }
             }
+            loopCandidates.sort(() => rand() - 0.5);
+            const maxLoops = Math.floor(w * h * 0.005);
+            for (let i = 0; i < Math.min(maxLoops, loopCandidates.length); i++) {
+                grid[loopCandidates[i].y][loopCandidates[i].x] = '.';
+            }
 
-            // 3. Find Start, Key, Exit with high topological separation
+            // Verify: strictly zero 2x2 floor blocks
+            let has2x2 = false;
+            for (let y = 0; y < h - 1; y++) {
+                for (let x = 0; x < w - 1; x++) {
+                    if (grid[y][x] === '.' && grid[y + 1][x] === '.' && grid[y][x + 1] === '.' && grid[y + 1][x + 1] === '.') {
+                        has2x2 = true;
+                        break;
+                    }
+                }
+                if (has2x2) break;
+            }
+            if (has2x2) continue;
+
+            // 3. Find true dead-end alcove cells (cells with exactly 1 neighbor open, surrounded on 3 sides by walls)
+            const deadEnds = [];
+            for (let y = 1; y < h - 1; y += 2) {
+                for (let x = 1; x < w - 1; x += 2) {
+                    if (grid[y][x] === '.') {
+                        let open = 0;
+                        for (const [dx, dy] of [[0, 1], [0, -1], [1, 0], [-1, 0]]) {
+                            if (grid[y + dy][x + dx] !== '#') open++;
+                        }
+                        if (open === 1) deadEnds.push({ x, y });
+                    }
+                }
+            }
+            if (deadEnds.length < 5) continue;
+
             const start = { x: 1, y: 1 };
             const distFromStart = this.bfsDistances(grid, w, h, start);
+            if (distFromStart[start.y][start.x] !== 0) continue;
 
-            // Find Key: cell with high distance in right half
+            // Find Key: dead-end alcove in opposite quadrant (right half, high distance)
             let maxDKey = -1, key = null;
-            for (let y = 1; y < h - 1; y++) {
-                for (let x = Math.floor(w * 0.45); x < w - 1; x++) {
-                    if (grid[y][x] === '.' && distFromStart[y][x] > maxDKey) {
-                        maxDKey = distFromStart[y][x];
-                        key = { x, y };
-                    }
+            for (const d of deadEnds) {
+                if (d.x === start.x && d.y === start.y) continue;
+                if (d.x < Math.floor(w * 0.45)) continue;
+                const manhattan = Math.abs(d.x - start.x) + Math.abs(d.y - start.y);
+                if (manhattan < (w + h) * 0.45) continue;
+                if (distFromStart[d.y][d.x] > maxDKey) {
+                    maxDKey = distFromStart[d.y][d.x];
+                    key = d;
                 }
             }
             if (!key || maxDKey < profile.minSToK) continue;
 
-            // Find Exit: cell with high distance from Key and not adjacent to Start
+            // Find Exit: dead-end alcove far from both Start and Key
             const distFromKey = this.bfsDistances(grid, w, h, key);
             let maxDExit = -1, exit = null;
-            for (let y = 1; y < h - 1; y++) {
-                for (let x = 1; x < w - 1; x++) {
-                    if (grid[y][x] === '.' && (x !== key.x || y !== key.y) && (x !== start.x || y !== start.y)) {
-                        const score = distFromKey[y][x] + Math.min(distFromStart[y][x], 30);
-                        if (score > maxDExit) {
-                            maxDExit = score;
-                            exit = { x, y };
-                        }
-                    }
+            for (const d of deadEnds) {
+                if (d.x === key.x && d.y === key.y) continue;
+                if (d.x === start.x && d.y === start.y) continue;
+                const mS = Math.abs(d.x - start.x) + Math.abs(d.y - start.y);
+                const mK = Math.abs(d.x - key.x) + Math.abs(d.y - key.y);
+                if (mS < (w + h) * 0.35 || mK < (w + h) * 0.35) continue;
+                const score = distFromKey[d.y][d.x] + distFromStart[d.y][d.x];
+                if (score > maxDExit) {
+                    maxDExit = score;
+                    exit = d;
                 }
             }
             if (!exit || distFromKey[exit.y][exit.x] < profile.minKToE) continue;
@@ -171,7 +226,6 @@ class MazeGenerator {
             // Verify BFS Paths
             const pathSToK = this.findBFSPath(grid, w, h, start, key);
             const pathKToE = this.findBFSPath(grid, w, h, key, exit);
-
             if (!pathSToK || !pathKToE) continue;
 
             // Mark Start, Key, Exit
@@ -183,20 +237,6 @@ class MazeGenerator {
             const monsters = this.findMonsterRoutes(grid, w, h, profile, start, key, exit);
             if (profile.monsterCount > 0 && monsters.length < profile.monsterCount) {
                 continue;
-            }
-
-            // Count dead ends
-            let deadEndsCount = 0;
-            for (let y = 1; y < h - 1; y++) {
-                for (let x = 1; x < w - 1; x++) {
-                    if (grid[y][x] === '.' || grid[y][x] === 'K' || grid[y][x] === 'E') {
-                        let neighbors = 0;
-                        for (const [dx, dy] of [[0,1], [0,-1], [1,0], [-1,0]]) {
-                            if (grid[y + dy][x + dx] !== '#') neighbors++;
-                        }
-                        if (neighbors === 1) deadEndsCount++;
-                    }
-                }
             }
 
             const map = grid.map(r => r.join(''));
@@ -220,7 +260,7 @@ class MazeGenerator {
                 stats: {
                     stepsSToK: pathSToK.length,
                     stepsKToE: pathKToE.length,
-                    deadEndsCount,
+                    deadEndsCount: deadEnds.length,
                     seed
                 }
             };

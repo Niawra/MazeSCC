@@ -7,33 +7,90 @@ class SpriteRenderer {
     }
 
     /**
-     * Draw retro 3D beveled wall tile
+     * Draw retro 3D beveled wall tile with seamless autotiling connection
      */
-    drawWall(ctx, x, y, size, colors) {
-        // Main block
+    drawWall(ctx, x, y, size, colors, neighbors = null) {
+        // Main block fill
         ctx.fillStyle = colors.wallFill;
         ctx.fillRect(x, y, size, size);
 
-        // Top and Left 3D highlight bevel
         const bevel = Math.max(2, Math.floor(size * 0.12));
-        ctx.fillStyle = colors.wallHighlight;
-        ctx.globalAlpha = 0.35;
-        // Top highlight
-        ctx.fillRect(x, y, size, bevel);
-        // Left highlight
-        ctx.fillRect(x, y, bevel, size);
+        const lineWidth = Math.max(1.5, Math.floor(size * 0.08));
 
-        // Bottom and Right shadow bevel
-        ctx.fillStyle = "#000000";
-        ctx.globalAlpha = 0.45;
-        ctx.fillRect(x, y + size - bevel, size, bevel);
-        ctx.fillRect(x + size - bevel, y, bevel, size);
+        if (!neighbors) {
+            // Standalone fallback
+            ctx.fillStyle = colors.wallHighlight;
+            ctx.globalAlpha = 0.35;
+            ctx.fillRect(x, y, size, bevel);
+            ctx.fillRect(x, y, bevel, size);
 
-        // Inner glowing border
-        ctx.globalAlpha = 0.8;
+            ctx.fillStyle = "#000000";
+            ctx.globalAlpha = 0.45;
+            ctx.fillRect(x, y + size - bevel, size, bevel);
+            ctx.fillRect(x + size - bevel, y, bevel, size);
+
+            ctx.globalAlpha = 0.8;
+            ctx.strokeStyle = colors.wallBorder;
+            ctx.lineWidth = lineWidth;
+            ctx.strokeRect(x + bevel, y + bevel, size - bevel * 2, size - bevel * 2);
+            ctx.globalAlpha = 1.0;
+            return;
+        }
+
+        // Seamless Connected Wall Rendering:
+        // Highlights & Shadows only on exterior faces bordering open corridors
+        if (!neighbors.top) {
+            ctx.fillStyle = colors.wallHighlight;
+            ctx.globalAlpha = 0.35;
+            ctx.fillRect(x, y, size, bevel);
+        }
+        if (!neighbors.left) {
+            ctx.fillStyle = colors.wallHighlight;
+            ctx.globalAlpha = 0.35;
+            ctx.fillRect(x, y, bevel, size);
+        }
+        if (!neighbors.bottom) {
+            ctx.fillStyle = "#000000";
+            ctx.globalAlpha = 0.45;
+            ctx.fillRect(x, y + size - bevel, size, bevel);
+        }
+        if (!neighbors.right) {
+            ctx.fillStyle = "#000000";
+            ctx.globalAlpha = 0.45;
+            ctx.fillRect(x + size - bevel, y, bevel, size);
+        }
+
+        // Luminous Neon Outer Contour lines
         ctx.strokeStyle = colors.wallBorder;
-        ctx.lineWidth = Math.max(1, Math.floor(size * 0.08));
-        ctx.strokeRect(x + bevel, y + bevel, size - bevel * 2, size - bevel * 2);
+        ctx.lineWidth = lineWidth;
+        ctx.globalAlpha = 0.9;
+        ctx.beginPath();
+
+        if (!neighbors.top) {
+            ctx.moveTo(x, y + lineWidth / 2);
+            ctx.lineTo(x + size, y + lineWidth / 2);
+        }
+        if (!neighbors.bottom) {
+            ctx.moveTo(x, y + size - lineWidth / 2);
+            ctx.lineTo(x + size, y + size - lineWidth / 2);
+        }
+        if (!neighbors.left) {
+            ctx.moveTo(x + lineWidth / 2, y);
+            ctx.lineTo(x + lineWidth / 2, y + size);
+        }
+        if (!neighbors.right) {
+            ctx.moveTo(x + size - lineWidth / 2, y);
+            ctx.lineTo(x + size - lineWidth / 2, y + size);
+        }
+        ctx.stroke();
+
+        // Subtle tech panel micro-detail for completely internal wall clusters
+        if (neighbors.top && neighbors.bottom && neighbors.left && neighbors.right) {
+            ctx.fillStyle = colors.wallHighlight;
+            ctx.globalAlpha = 0.08;
+            const center = Math.floor(size / 2) - 1;
+            ctx.fillRect(x + center, y + center, 2, 2);
+        }
 
         // Reset alpha
         ctx.globalAlpha = 1.0;

@@ -910,11 +910,17 @@ class MazeRunGame {
                 const px = x * this.tileSize;
                 const py = y * this.tileSize;
                 if (this.grid[y][x] === 1) {
+                    const neighbors = {
+                        top: y > 0 && this.grid[y - 1][x] === 1,
+                        bottom: y < this.height - 1 && this.grid[y + 1][x] === 1,
+                        left: x > 0 && this.grid[y][x - 1] === 1,
+                        right: x < this.width - 1 && this.grid[y][x + 1] === 1
+                    };
                     sprites.drawWall(ctx, px, py, this.tileSize, {
                         wallFill: this.level.wallFill,
                         wallBorder: this.level.wallBorder,
                         wallHighlight: this.level.wallHighlight
-                    });
+                    }, neighbors);
                 } else {
                     sprites.drawFloor(ctx, px, py, this.tileSize, {
                         floorFill: this.level.floorFill,

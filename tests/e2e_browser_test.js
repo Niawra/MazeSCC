@@ -156,7 +156,7 @@ async function runE2ETests() {
     // 8. Test Virtual D-Pad
     console.log("\n[TEST 8]: Testing Virtual D-Pad...");
     const stepsBeforeDpad = await page.evaluate(() => window.game.steps);
-    await page.click('#dpad-right');
+    await page.click('#dpad-down');
     await new Promise(r => setTimeout(r, 200));
     const stepsAfterDpad = await page.evaluate(() => window.game.steps);
     if (stepsAfterDpad <= stepsBeforeDpad) {

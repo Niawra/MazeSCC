@@ -25,7 +25,7 @@
                         <span class="neon-cyan">MAZE</span>
                         <span class="neon-yellow">RUN</span>
                     </h1>
-                    <p class="game-tagline">SCHOOL TECH EVENT EDITION</p>
+                    <p class="game-tagline">2 MAPS • 6 LEVELS • EXTREME LABYRINTHS</p>
                 </div>
 
                 <div class="title-preview-art">
@@ -37,7 +37,7 @@
 
                 <div class="menu-actions">
                     <button id="btn-start-game" class="btn btn-primary btn-large glow-btn">
-                        ▶ START GAME
+                        ▶ CHOOSE MAP &amp; PLAY
                     </button>
                     <button id="btn-how-to-play" class="btn btn-secondary">
                         📖 HOW TO PLAY
@@ -45,13 +45,69 @@
                 </div>
 
                 <div class="level-badges-preview">
-                    <div class="level-pill pill-l1">LEVEL 1: EASY</div>
-                    <div class="level-pill pill-l2">LEVEL 2: MEDIUM</div>
-                    <div class="level-pill pill-l3">LEVEL 3: HARD</div>
+                    <div class="level-pill pill-cyber">🌐 MAP 1: CYBER (3 LEVELS)</div>
+                    <div class="level-pill pill-shadow">🌑 MAP 2: SHADOW (3 LEVELS)</div>
                 </div>
 
                 <footer class="start-footer">
-                    <p>Designed for Middle School Tech Event • Keyboard & Touch Ready</p>
+                    <p>Designed for Middle School Tech Event • Keyboard &amp; Touch Ready</p>
+                </footer>
+            </div>
+        </section>
+
+        <!-- ================= MAP & LEVEL SELECTION SCREEN ================= -->
+        <section id="screen-select" class="screen hidden">
+            <div class="arcade-card select-card">
+                <header class="select-header">
+                    <button id="btn-select-back" class="btn btn-outline btn-sm">⬅ TITLE</button>
+                    <h2 class="select-title">
+                        <span class="neon-cyan">SELECT</span> <span class="neon-yellow">LABYRINTH</span>
+                    </h2>
+                    <div class="header-dummy"></div>
+                </header>
+
+                <!-- Map Selector Tabs -->
+                <div class="map-tabs">
+                    <button id="tab-map-cyber" class="map-tab active" data-map="cyber">
+                        <span class="tab-icon">🌐</span>
+                        <div class="tab-text">
+                            <span class="tab-title">MAP 1: CYBER</span>
+                            <span class="tab-sub">Neon Circuit Grid</span>
+                        </div>
+                        <span id="tab-cyber-stars" class="tab-stars">☆☆☆</span>
+                    </button>
+                    <button id="tab-map-shadow" class="map-tab" data-map="shadow">
+                        <span class="tab-icon">🌑</span>
+                        <div class="tab-text">
+                            <span class="tab-title">MAP 2: SHADOW</span>
+                            <span class="tab-sub">Void Catacombs</span>
+                        </div>
+                        <span id="tab-shadow-stars" class="tab-stars">☆☆☆</span>
+                    </button>
+                </div>
+
+                <!-- Selected Map Banner -->
+                <div id="map-banner" class="map-banner">
+                    <div class="banner-info">
+                        <h3 id="map-banner-title" class="banner-title neon-cyan">MAP 1: CYBER LABYRINTH</h3>
+                        <p id="map-banner-desc" class="banner-desc">Geometric neon grid with sharp turns, strict corridors, and sentry drones.</p>
+                    </div>
+                    <div class="banner-meta">
+                        <span id="banner-progress" class="badge badge-info">Progress: 0/3</span>
+                        <span id="banner-score" class="badge badge-warning">Score: 0</span>
+                    </div>
+                </div>
+
+                <!-- 3 Level Cards Grid -->
+                <div id="level-cards-container" class="level-cards-grid">
+                    <!-- Injected dynamically by game engine -->
+                </div>
+
+                <footer class="select-footer">
+                    <button id="btn-reset-progress" class="btn btn-outline btn-xs" title="Reset level stars &amp; records">
+                        🗑️ Reset Progress
+                    </button>
+                    <span class="select-hint">Independent progression per map! Replay anytime to beat your record.</span>
                 </footer>
             </div>
         </section>
@@ -62,7 +118,7 @@
             <header id="game-hud">
                 <div class="hud-top-row">
                     <div class="hud-item hud-level">
-                        <span id="hud-level-title" class="hud-highlight">LEVEL 1: ROOKIE RUN</span>
+                        <span id="hud-level-title" class="hud-highlight">[CYBER] LEVEL 1: EASY</span>
                     </div>
                     <div class="hud-item hud-stats">
                         <div class="stat-box"><span class="stat-icon">⏱️</span> <span id="hud-timer">00:00.0</span></div>
@@ -80,11 +136,14 @@
                         <button id="btn-hint" class="btn btn-sm btn-hint" title="Reveal shortest path (3 per level)">
                             💡 Hint (3/3)
                         </button>
-                        <button id="btn-restart" class="btn btn-sm btn-icon" title="Restart Level (R)">
+                        <button id="btn-restart" class="btn btn-sm btn-icon" title="Restart Level with fresh layout (R)">
                             🔄 <span class="btn-label">Restart</span>
                         </button>
                         <button id="btn-pause" class="btn btn-sm btn-icon" title="Pause Game (P or Esc)">
                             ⏸️ <span class="btn-label">Pause</span>
+                        </button>
+                        <button id="btn-hud-map" class="btn btn-sm btn-icon" title="Return to Map &amp; Level Select">
+                            🗺️ <span class="btn-label">Map</span>
                         </button>
                         <button id="btn-mute" class="btn btn-sm btn-icon" title="Toggle Sound">
                             🔊 <span class="btn-label">Sound</span>
@@ -134,7 +193,7 @@
                         <div class="rule-icon">🔑</div>
                         <h3>COLLECT THE KEY</h3>
                         <p>The exit portal is locked with a heavy padlock.</p>
-                        <p>Locate and collect the <strong>Golden Key</strong> to unlock the exit portal!</p>
+                        <p>Locate and collect the <strong>Golden Key</strong> hidden in deep dead-end alcoves!</p>
                     </div>
                     <div class="rule-card">
                         <div class="rule-icon">👾</div>
@@ -165,7 +224,8 @@
                     <button id="btn-resume" class="btn btn-primary btn-block">▶ RESUME</button>
                     <button id="btn-pause-restart" class="btn btn-secondary btn-block">🔄 RESTART LEVEL</button>
                     <button id="btn-pause-new-maze" class="btn btn-secondary btn-block">🎲 NEW MAZE VARIATION</button>
-                    <button id="btn-pause-menu" class="btn btn-outline btn-block">🏠 MAIN MENU</button>
+                    <button id="btn-pause-map-select" class="btn btn-secondary btn-block">🗺️ MAP &amp; LEVEL SELECT</button>
+                    <button id="btn-pause-menu" class="btn btn-outline btn-block">🏠 TITLE SCREEN</button>
                 </div>
             </div>
         </div>
@@ -196,6 +256,7 @@
                 </div>
                 <div class="modal-footer">
                     <button id="btn-next-level" class="btn btn-primary btn-large glow-btn">NEXT LEVEL ➔</button>
+                    <button id="btn-complete-map-select" class="btn btn-secondary">🗺️ MAP SELECT</button>
                 </div>
             </div>
         </div>
@@ -206,7 +267,7 @@
                 <div class="modal-header">
                     <div class="trophy-emoji">🏆</div>
                     <h2 class="neon-yellow">CONGRATULATIONS!</h2>
-                    <p class="victory-subtitle">YOU CONQUERED ALL 3 MAZES!</p>
+                    <p id="victory-subtitle" class="victory-subtitle">YOU CONQUERED THE CYBER LABYRINTH!</p>
                 </div>
                 <div class="modal-body summary-body">
                     <div class="rank-badge-box">
@@ -228,10 +289,16 @@
                             <span id="victory-total-score" class="stat-val neon-green">0</span>
                         </div>
                     </div>
+
+                    <div id="victory-next-map-callout" class="callout-box hidden">
+                        <p class="callout-title">READY FOR THE NEXT CHALLENGE?</p>
+                        <p class="callout-desc">Master <strong>MAP 2: SHADOW LABYRINTH</strong> to become the true Maze Champion!</p>
+                    </div>
                 </div>
                 <div class="modal-footer victory-buttons">
-                    <button id="btn-play-again" class="btn btn-primary btn-large glow-btn">🔄 PLAY AGAIN</button>
-                    <button id="btn-victory-menu" class="btn btn-secondary">🏠 MAIN MENU</button>
+                    <button id="btn-play-again" class="btn btn-primary btn-large glow-btn">🔄 REPLAY MAP</button>
+                    <button id="btn-victory-map-select" class="btn btn-secondary">🗺️ MAP SELECT</button>
+                    <button id="btn-victory-menu" class="btn btn-outline">🏠 TITLE</button>
                 </div>
             </div>
         </div>

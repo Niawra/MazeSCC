@@ -1,138 +1,143 @@
 # 🎮 MAZE RUN — Retro Pixel Maze Game
+## Dual-Map Edition • 6 Levels • Extreme Asymmetric Labyrinths
 
-A complete, fully functional browser-based retro pixel-art maze game built for a school technology event for middle school students.
+A complete, fully functional browser-based retro pixel-art maze game built for a school technology event for middle school students, expanded with **2 distinct map architectures** and **extreme labyrinth difficulty**.
 
 ![HTML5 Canvas](https://img.shields.io/badge/Tech-HTML5%20Canvas%20%2B%20Vanilla%20JS-brightgreen)
 ![Web Audio API](https://img.shields.io/badge/Audio-Synthesized%20Web%20Audio-cyan)
 ![Zero Dependencies](https://img.shields.io/badge/Backend-Zero%20Dependencies%20(Pure%20Static)-yellow)
 ![Tested](https://img.shields.io/badge/E2E%20Tests-100%25%20Passed-blue)
+![Maps](https://img.shields.io/badge/Maps-2%20Maps%20%7C%206%20Levels-magenta)
 
 ---
 
-## 🌟 Highlights & Enhanced Labyrinth Design
+## 🌟 Major Highlights & Dual-Map Architecture
 
-- **Tight, Dense Wall Architecture:** Zero wide-open voids or floating blocks! Every corridor is strictly 1-tile wide with continuous solid walls, crisp bounding neon contour lines, and seamless autotiling connection between adjacent wall tiles.
-- **Enclosed 3-Wall Cul-de-Sac Alcoves:** Golden Keys and Exit Portals are deeply embedded inside dead-end chambers surrounded on 3 sides by walls (`#`), with only 1 narrow entrance corridor. No shortcuts or gap-cutting allowed!
-- **Opposite Placement Strategy:** Keys and Exit doors are placed in opposite sectors separated by dividing maze walls. Players cannot simply dash down a single column or row; they must navigate through intricate winding passages twice (once to the Golden Key, then back across through monster sectors to the Exit Portal).
-- **Procedural Maze Generation & Layout Variation:** Every restart (`R` key or Restart button in HUD / Pause modal) dynamically generates a brand-new, 100% BFS-verified labyrinth with strictly 1-tile passages, 3-wall alcove objectives, and safe monster patrol corridors.
-- **Three Progressive Playable Levels:**
-  - **Level 1 — Easy (The Winding Vault, 17 × 13):** 85-step journey to the Golden Key, 57-step return to Exit. Introduces players to real maze navigation with multiple dead ends and non-obvious chambers. No monsters.
-  - **Level 2 — Medium (Sentry Shadow Labyrinth, 23 × 15):** 97-step journey to Key, 91-step return to Exit. Features dense asymmetric walls, deceptive loops, 11 deep dead-end traps, and a central bottleneck patrolled by *Grumble the Sentry* (1.8 tiles/s) with safe alcoves to time your dash.
-  - **Level 3 — Hard (Dungeon of the Twin Phantoms, 27 × 17):** 105-step journey to Key, 103-step return to Exit. Complex, multilayered labyrinth with 11 deep dead-end traps and 2 aggressive sentry monsters (*Spike the Bat* and *Phantom the Ghost*, 2.0 tiles/s) guarding critical crossover corridors.
-- **Player Controls:**
-  - **Desktop / Laptop:** Arrow Keys or **WASD** with input buffering for smooth corner turns.
-  - **Mobile / Tablet:** Ergonomic on-screen virtual Directional Pad (D-Pad) with haptic feedback and swipe support.
-  - **Collision System:** Player cannot pass through walls. Touching a monster triggers screen shake and resets player to the level start position.
-- **Pathfinding Hint System:** 3 hints per level. Clicking **💡 Hint** (or pressing `H`) runs a BFS pathfinder and illuminates the next steps of the optimal route towards the objective for 5 seconds.
-- **HUD & Stats:** Real-time millisecond-accurate timer, step counter, key status badge, exit status badge, level title, and quick-action buttons.
-- **Pause & Resume:** Pauses timer, entity updates, and inputs.
-- **Restart Level:** Instant level reset at any point.
-- **Built-in 8-Bit Chiptune Sound:** Self-contained Web Audio API synthesizer for footsteps, wall bumps, key pickup arpeggios, portal unlocks, monster hit zaps, victory fanfares, and UI blips, with a persistent mute toggle (zero external audio files or broken links).
-- **Level Completion & Victory Screens:** Completion summaries with star ratings (1–3 stars), score breakdown, final cumulative rank (S+, S, A, B), and animated confetti celebration.
-- **Responsive Design:** Automatically calculates optimal tile sizing to fit desktop monitors, laptops, tablets, and mobile smartphones in portrait or landscape.
+### 🌐 MAP 1: Cyber Labyrinth
+- **Theme:** Futuristic Neon Cyber Grid (`#00f0ff` neon cyan glow, dark circuit floor).
+- **Generator Algorithm:** Geometric Growing Tree with anti-runway momentum bias and 90° circuit turns.
+- **Characteristics:** Dense geometric walls, sharp corridor turns, deceptive dead-end pockets, and robotic sentries.
+  - **Level 1 — Easy ($21 \times 21$):** $\ge 15$ dead ends, $\ge 15$ junctions, 0 monsters. Introduction to deep maze exploration.
+  - **Level 2 — Medium ($27 \times 27$):** $\ge 30$ dead ends, $\ge 30$ junctions, 1 patrolling sentry (*Grumble the Blob*, speed 1.8).
+  - **Level 3 — Extreme ($35 \times 35$):** $\ge 45$ dead ends, $\ge 50$ junctions, 2 patrolling sentries (*Spike the Bat* and *Phantom the Ghost*, speed 2.0).
+
+### 🌑 MAP 2: Shadow Labyrinth
+- **Theme:** Dark Mysterious Void (`#d946ef` / `#c084fc` void purple/magenta glow, deep abyss floor).
+- **Generator Algorithm:** Randomized Prim's Frontier Carving with high organic branch dispersion.
+- **Characteristics:** Organic, asymmetric, unpredictable meandering corridors, dense forks, and void demons. **NOT a recolor or size clone of Map 1!**
+  - **Level 1 — Easy ($21 \times 21$):** $\ge 15$ dead ends, $\ge 15$ junctions, 0 monsters. Meandering catacombs with deceptive dead ends.
+  - **Level 2 — Medium ($27 \times 27$):** $\ge 30$ dead ends, $\ge 30$ junctions, 1 patrolling void stalker (*Nightshade the Shade*, speed 1.8).
+  - **Level 3 — Extreme ($35 \times 35$):** $\ge 45$ dead ends, $\ge 50$ junctions, 2 patrolling arch-demons (*Vortex the Void Bat* and *Specter the Phantom*, speed 2.0).
 
 ---
 
-## 🚀 How to Run the Game
+## 🏰 Strict Wall Structure & Placement Mechanics
 
-### Method 1: Direct File Open (Simplest)
-No installation, node, or servers required!
-1. Locate [`index.html`](file:///c:/Users/tania/Downloads/maze_scc/index.html) in the project folder.
-2. Double-click [`index.html`](file:///c:/Users/tania/Downloads/maze_scc/index.html) to open it in Google Chrome, Microsoft Edge, Mozilla Firefox, or Apple Safari.
-3. Click **▶ START GAME** and enjoy!
-
-### Method 2: Local HTTP Server (Optional)
-If you prefer running through a local web server:
-```bash
-# Using Node.js (built-in npx)
-npx serve .
-
-# Or using Python (if installed)
-python -m http.server 8000
-```
-Then visit `http://localhost:3000` (or `http://localhost:8000`) in your browser.
+1. **Strictly 1-Tile Corridors & Zero $2 \times 2$ Voids:**
+   - Lattice vertex carving guarantees that corner wall vertices remain solid.
+   - Corridors are strictly 1 tile wide (`.`); there are **zero** $2 \times 2$ floor voids (`.. / ..`) anywhere on the map.
+   - Outer border is completely enclosed with solid boundary walls.
+   - Seamless autotiled rendering connects contiguous walls with glowing neon contour lines on exterior corridor-facing edges.
+2. **Dynamic 3-Walled Cul-de-Sac Alcoves:**
+   - The Golden Key (`🔑`) and Exit Portal (`🚪`) are **never placed at fixed or predictable coordinates**.
+   - Every generation or restart dynamically selects alcove cells from candidate dead ends surrounded on 3 sides by walls (`openNeighbors === 1`).
+   - Placement is ranked via **BFS shortest-path distance**: Key is placed in a deep dead end far from Start, and Exit is placed in a separate deep dead end far from both Start and Key.
+   - Players cannot cut across or spot the objectives through open gaps.
 
 ---
 
-## 🕹️ Game Controls
+## 🗺️ Independent Progression & Level Selection System
 
-| Action | Keyboard | Touch / Mobile |
+- **Map & Level Selection Screen (`#screen-select`):**
+  - Interactive tabs to switch between **MAP 1: CYBER** and **MAP 2: SHADOW**.
+  - Each map has independent level progression saved in `localStorage`:
+    - Level 1 is unlocked initially for both maps.
+    - Beating Level 1 unlocks Level 2; beating Level 2 unlocks Level 3.
+    - Completing levels on Map 1 does not affect Map 2, and vice versa.
+    - All unlocked levels can be freely replayed anytime to beat personal best times or score records.
+  - Displays total stars ($\text{max } 9$ per map), completion status, best completion times, best step counts, and level score.
+  - One-click progress reset button with confirmation dialog.
+
+---
+
+## 🕹️ Controls & Navigation
+
+| Action | Desktop Keyboard | Mobile / Tablet Touch |
 | :--- | :--- | :--- |
 | **Move Up** | `W` or `↑` | Tap **▲** button or swipe up |
 | **Move Down** | `S` or `↓` | Tap **▼** button or swipe down |
 | **Move Left** | `A` or `←` | Tap **◀** button or swipe left |
 | **Move Right** | `D` or `→` | Tap **▶** button or swipe right |
-| **Use Hint** | `H` key | Tap **💡 Hint** button |
-| **Restart Level** | `R` key | Tap **🔄 Restart** button |
+| **Use Hint (BFS illumination)** | `H` key | Tap **💡 Hint** button (3 per level) |
+| **Restart Level (New variation)** | `R` key | Tap **🔄 Restart** button |
+| **Open Map & Level Select** | `M` key | Tap **🗺️ Map** button in HUD |
 | **Pause / Resume** | `P` or `Esc` | Tap **⏸️ Pause** button |
-| **Toggle Mute** | — | Tap **🔊 Sound** button |
+| **Toggle 8-bit Audio** | — | Tap **🔊 Sound** button |
 
 ---
 
-## 🎯 Gameplay Rules & Mechanics
+## 🚀 How to Run the Game
 
-1. **Find the Key:** Every maze contains 1 Golden Key (`🔑`). The exit portal (`🚪`) is locked with a heavy padlock until you retrieve the key.
-2. **Unlock the Portal:** After collecting the key, the exit portal springs to life with swirling neon vortex rings. Step onto the exit portal to complete the level.
-3. **Beware the Monsters (Levels 2 & 3):**
-   - Monsters patrol back-and-forth along fixed corridors.
-   - Touching a monster triggers an alert and sends you back to the start position of that level.
-   - Keys already collected remain saved so you only need to sneak past and escape.
-4. **Hints:** You have 3 hints per level. If you are ever lost, activate a hint to see glowing breadcrumbs pointing towards the Key (or Exit).
-5. **Scoring Formula:**
-   $$\text{Score} = 1000 + \max(0, (\text{ParTime} - \text{Time}) \times 25) + \max(0, (\text{ParSteps} - \text{Steps}) \times 15) + (\text{HintsLeft} \times 100)$$
+### Method 1: Direct File Open (Zero Setup!)
+No build steps, node, or servers required:
+1. Locate [`index.html`](file:///c:/Users/tania/Downloads/maze_scc/index.html) in the project folder.
+2. Double-click [`index.html`](file:///c:/Users/tania/Downloads/maze_scc/index.html) to open in Google Chrome, Microsoft Edge, Firefox, or Safari.
+3. Click **▶ CHOOSE MAP & PLAY** to select your labyrinth and begin playing!
+
+### Method 2: Local HTTP Server (Optional)
+```bash
+# Using Node.js
+npx serve .
+
+# Or using Python
+python -m http.server 8000
+```
+Open `http://localhost:3000` (or `http://localhost:8000`) in your browser.
 
 ---
 
-## 🧪 Automated Testing
+## 🧪 Comprehensive Automated Test Suites
 
-The game includes both unit and end-to-end browser tests verifying all requirements:
+The codebase includes full automated test coverage:
 
 ```bash
-# 1. Run engine & maze connectivity tests:
-node tests/test_game_engine.js
+# 1. Verify all 6 Master Levels & Procedural Variations against difficulty metrics:
+# (Checks size >= 21x21 / 27x27 / 35x35, zero 2x2 voids, dead ends, junctions, 3-wall alcoves, BFS solvability)
 node tests/verify_all_levels.js
 
-# 2. Run full End-to-End browser test (all 3 levels + mechanics):
+# 2. Run Game Engine & Progression Unit Tests:
+# (Tests movement, collision, monsters, hints, independent map progress, dynamic alcove variance)
+node tests/test_game_engine.js
+
+# 3. Run End-to-End Browser Tests (Puppeteer headless Chrome):
+# (Drives all 20 scenarios: Map select tabs, Level 1 -> 3 completion, victory screen, map switching)
 node tests/e2e_browser_test.js
 
-# 3. Run mobile viewport responsiveness test:
+# 4. Run Mobile Viewport Responsiveness Test (iPhone 390x844):
 node tests/test_mobile_viewport.js
 ```
 
-### Verified Test Results:
-- ✅ Outer maze boundaries fully enclosed.
-- ✅ All 3 levels verified 100% solvable via Breadth-First Search.
-- ✅ Monster waypoints verified clear and open.
-- ✅ Player wall collisions stop movement.
-- ✅ Key collection unlocks the exit door.
-- ✅ Reaching exit without key is blocked.
-- ✅ Touching monsters resets player to level start.
-- ✅ Timer accurately freezes on pause and level complete.
-- ✅ 3 hints per level correctly calculate shortest paths.
-- ✅ Both keyboard and touch D-Pad controls tested.
-- ✅ Star ratings, scoring, and Final Victory screen with Play Again verified.
-
 ---
 
-## 📁 File Structure
+## 📂 Project Structure
 
 ```
 maze_scc/
-├── index.html              # Main HTML5 application shell & UI overlays
+├── index.html              # Main HTML5 game container, HUD, modals & Map Select screen
 ├── css/
-│   └── style.css           # Retro arcade styling, neon theme, responsive layout
+│   └── style.css           # Retro pixel arcade styling, responsive layout & neon glowing cards
 ├── js/
-│   ├── audio.js            # Self-contained Web Audio API 8-bit sound effects
-│   ├── maze-generator.js   # Procedural asymmetric labyrinth generator with turn bias & BFS verification
-│   ├── maze-data.js        # Enhanced challenging level definitions & monster routes
-│   ├── pathfinder.js       # Breadth-First Search (BFS) pathfinder for hints
-│   ├── sprites.js          # Pixel-art rendering (Player, Key, Portal, Monsters)
-│   └── game.js             # Core game engine, states, inputs, physics, and HUD
+│   ├── audio.js            # Synthesized 8-bit Web Audio API sound effects
+│   ├── maze-generator.js   # Dual procedural generator: Cyber (DFS/Tree) & Shadow (Prim's)
+│   ├── maze-data.js        # Map profiles, deterministic master levels & ProgressionManager
+│   ├── pathfinder.js       # BFS shortest-path finder for hint system & solvability checks
+│   ├── sprites.js          # Procedural pixel-art rendering for player, key, exit, monsters, walls
+│   └── game.js             # Main game loop, state machine, input handling & canvas scaling
 ├── tests/
-│   ├── test_game_engine.js      # Headless test for movement, collisions, hints
-│   ├── verify_all_levels.js     # BFS route and monster waypoint verification
-│   ├── e2e_browser_test.js      # Puppeteer Chrome E2E test of all 3 levels
-│   ├── test_mobile_viewport.js  # Mobile touch & responsive layout test
-│   └── screenshots/             # Visual proof screenshots captured during tests
-└── README.md               # Complete project documentation
+│   ├── verify_all_levels.js     # Validates all 6 levels against strict metric requirements
+│   ├── test_game_engine.js      # 47 unit tests for game logic, collisions & progression
+│   ├── e2e_browser_test.js      # 20 automated Puppeteer browser tests
+│   ├── test_mobile_viewport.js  # Mobile touch D-pad & viewport tests
+│   └── screenshots/             # Generated test screenshots
+└── README.md               # Complete game documentation & guide
 ```

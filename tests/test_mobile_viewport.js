@@ -1,4 +1,4 @@
-// Mobile Viewport and Touch Responsive Test
+// Mobile Viewport and Touch Responsive Test — iPhone Viewport (390x844)
 
 const puppeteer = require('puppeteer-core');
 const path = require('path');
@@ -12,7 +12,7 @@ async function testMobileViewport() {
     console.log("Testing mobile viewport responsiveness (390x844)...");
     const screenshotsDir = path.join(__dirname, 'screenshots');
 
-    const testProfileDir = path.join(__dirname, '.mobile_test_profile_' + Date.now());
+    const testProfileDir = path.join(require('os').tmpdir(), 'maze_mobile_' + Date.now() + '_' + Math.floor(Math.random()*10000));
     const browser = await puppeteer.launch({
         executablePath,
         headless: 'new',
@@ -20,8 +20,9 @@ async function testMobileViewport() {
         args: [
             '--no-sandbox',
             '--disable-setuid-sandbox',
-            '--disable-gpu',
-            '--no-first-run'
+            '--no-first-run',
+            '--no-default-browser-check',
+            '--disable-gpu'
         ]
     });
 
@@ -43,8 +44,15 @@ async function testMobileViewport() {
     await page.tap('#btn-close-how-to-play');
     await new Promise(r => setTimeout(r, 300));
 
-    // Start Game on mobile
+    // Open Map & Level Selector on mobile
     await page.tap('#btn-start-game');
+    await new Promise(r => setTimeout(r, 400));
+    await page.screenshot({ path: path.join(screenshotsDir, 'mobile_02b_map_select.png') });
+
+    // Tap Level 1 Play button
+    const playBtn = await page.$('.level-card.unlocked .btn-play-level');
+    if (!playBtn) throw new Error("No play button on mobile Map Select screen!");
+    await playBtn.tap();
     await new Promise(r => setTimeout(r, 500));
 
     // Check canvas and layout
@@ -63,11 +71,22 @@ async function testMobileViewport() {
 
     console.log("Mobile layout analysis:", JSON.stringify(layout, null, 2));
 
-    // Tap D-Pad down button to test touch (down from (1,1) is open tile (1,2))
-    await page.tap('#dpad-down');
+    // Find the open direction from start (either right or down in a strictly 1-tile corridor)
+    const openDir = await page.evaluate(() => {
+        const g = window.game;
+        const px = g.player.gridX;
+        const py = g.player.gridY;
+        if (px + 1 < g.width && g.grid[py][px + 1] === 0) return 'right';
+        if (py + 1 < g.height && g.grid[py + 1][px] === 0) return 'down';
+        return 'right';
+    });
+    console.log(`Open corridor from start is: ${openDir}`);
+
+    // Tap D-Pad open direction button to test touch
+    await page.tap(`#dpad-${openDir}`);
     await new Promise(r => setTimeout(r, 200));
     const steps = await page.evaluate(() => window.game.steps);
-    console.log(`Mobile tap registered steps: ${steps}`);
+    console.log(`Mobile tap on #dpad-${openDir} registered steps: ${steps}`);
     if (steps <= 0) throw new Error("Mobile touch on D-Pad failed to register move!");
 
     await page.screenshot({ path: path.join(screenshotsDir, 'mobile_03_gameplay.png') });

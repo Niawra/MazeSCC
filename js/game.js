@@ -1,14 +1,18 @@
 // MAZE RUN — Main Game Engine
-// Pairs HTML5 Canvas rendering with crisp grid logic, audio, and UI overlays
+// Dual-Map Architecture (Cyber Labyrinth & Shadow Labyrinth) with 6 Progressive Levels
+// Pairs HTML5 Canvas rendering with crisp grid logic, procedural generation, audio, and responsive touch controls.
 
 class MazeRunGame {
     constructor() {
         this.canvas = document.getElementById('game-canvas');
         this.ctx = this.canvas.getContext('2d');
 
-        // State
-        this.state = 'START'; // 'START', 'PLAYING', 'PAUSED', 'LEVEL_COMPLETE', 'VICTORY'
-        this.currentLevelIndex = 0;
+        // State & Navigation
+        this.state = 'START'; // 'START', 'SELECT', 'PLAYING', 'PAUSED', 'LEVEL_COMPLETE', 'VICTORY'
+        this.currentMapId = 'cyber'; // 'cyber' or 'shadow'
+        this.currentLevelNumber = 1; // 1, 2, or 3
+        this.selectedTabMapId = 'cyber';
+
         this.level = null;
         this.grid = [];
         this.width = 0;
@@ -48,7 +52,7 @@ class MazeRunGame {
         this.lastFrameTime = performance.now();
         this.isTimerRunning = false;
 
-        // Overall Campaign Stats
+        // Overall Campaign Stats for current run
         this.levelResults = [];
         this.totalScore = 0;
 
@@ -80,12 +84,26 @@ class MazeRunGame {
         // UI Elements
         this.dom = {
             screenStart: document.getElementById('screen-start'),
+            screenSelect: document.getElementById('screen-select'),
             screenGame: document.getElementById('screen-game'),
             modalHowToPlay: document.getElementById('modal-how-to-play'),
             modalPause: document.getElementById('modal-pause'),
             modalLevelComplete: document.getElementById('modal-level-complete'),
             modalVictory: document.getElementById('modal-victory'),
             toast: document.getElementById('toast'),
+
+            // Select Screen elements
+            tabCyber: document.getElementById('tab-map-cyber'),
+            tabShadow: document.getElementById('tab-map-shadow'),
+            tabCyberStars: document.getElementById('tab-cyber-stars'),
+            tabShadowStars: document.getElementById('tab-shadow-stars'),
+            mapBannerTitle: document.getElementById('map-banner-title'),
+            mapBannerDesc: document.getElementById('map-banner-desc'),
+            bannerProgress: document.getElementById('banner-progress'),
+            bannerScore: document.getElementById('banner-score'),
+            levelCardsContainer: document.getElementById('level-cards-container'),
+            btnSelectBack: document.getElementById('btn-select-back'),
+            btnResetProgress: document.getElementById('btn-reset-progress'),
 
             // HUD
             hudLevelTitle: document.getElementById('hud-level-title'),
@@ -96,7 +114,12 @@ class MazeRunGame {
             btnHint: document.getElementById('btn-hint'),
             btnPause: document.getElementById('btn-pause'),
             btnRestart: document.getElementById('btn-restart'),
+            btnHudMap: document.getElementById('btn-hud-map'),
             btnMute: document.getElementById('btn-mute'),
+
+            // Victory modal elements
+            victorySubtitle: document.getElementById('victory-subtitle'),
+            victoryNextMapCallout: document.getElementById('victory-next-map-callout'),
 
             // D-Pad buttons
             dpadUp: document.getElementById('dpad-up'),
@@ -109,10 +132,10 @@ class MazeRunGame {
     }
 
     bindEvents() {
-        // Start Game
+        // Start Game -> Open Map Select
         document.getElementById('btn-start-game').addEventListener('click', () => {
             sounds.playClick();
-            this.startLevel(0);
+            this.showMapSelectScreen(this.currentMapId);
         });
 
         // How to Play modal
@@ -125,10 +148,46 @@ class MazeRunGame {
             this.dom.modalHowToPlay.classList.add('hidden');
         });
 
+        // Map Select Screen
+        if (this.dom.btnSelectBack) {
+            this.dom.btnSelectBack.addEventListener('click', () => {
+                sounds.playClick();
+                this.showStartScreen();
+            });
+        }
+        if (this.dom.tabCyber) {
+            this.dom.tabCyber.addEventListener('click', () => {
+                sounds.playClick();
+                this.renderSelectScreen('cyber');
+            });
+        }
+        if (this.dom.tabShadow) {
+            this.dom.tabShadow.addEventListener('click', () => {
+                sounds.playClick();
+                this.renderSelectScreen('shadow');
+            });
+        }
+        if (this.dom.btnResetProgress) {
+            this.dom.btnResetProgress.addEventListener('click', () => {
+                if (confirm("Reset all stars, times, and records for both maps?")) {
+                    sounds.playClick();
+                    ProgressionManager.resetProgress();
+                    this.renderSelectScreen(this.selectedTabMapId);
+                    this.showToast("Progress Reset!", 1500);
+                }
+            });
+        }
+
         // HUD Buttons
         this.dom.btnHint.addEventListener('click', () => this.triggerHint());
         this.dom.btnRestart.addEventListener('click', () => this.restartLevel(true));
         this.dom.btnPause.addEventListener('click', () => this.togglePause());
+        if (this.dom.btnHudMap) {
+            this.dom.btnHudMap.addEventListener('click', () => {
+                sounds.playClick();
+                this.showMapSelectScreen(this.currentMapId);
+            });
+        }
         this.dom.btnMute.addEventListener('click', () => this.toggleMute());
 
         // Pause Modal
@@ -149,6 +208,14 @@ class MazeRunGame {
                 this.restartLevel(true);
             });
         }
+        const btnPauseMap = document.getElementById('btn-pause-map-select');
+        if (btnPauseMap) {
+            btnPauseMap.addEventListener('click', () => {
+                sounds.playClick();
+                this.dom.modalPause.classList.add('hidden');
+                this.showMapSelectScreen(this.currentMapId);
+            });
+        }
         document.getElementById('btn-pause-menu').addEventListener('click', () => {
             sounds.playClick();
             this.dom.modalPause.classList.add('hidden');
@@ -161,13 +228,29 @@ class MazeRunGame {
             this.dom.modalLevelComplete.classList.add('hidden');
             this.nextLevel();
         });
+        const btnCompleteMap = document.getElementById('btn-complete-map-select');
+        if (btnCompleteMap) {
+            btnCompleteMap.addEventListener('click', () => {
+                sounds.playClick();
+                this.dom.modalLevelComplete.classList.add('hidden');
+                this.showMapSelectScreen(this.currentMapId);
+            });
+        }
 
         // Victory Modal
         document.getElementById('btn-play-again').addEventListener('click', () => {
             sounds.playClick();
             this.dom.modalVictory.classList.add('hidden');
-            this.startLevel(0);
+            this.startMapLevel(this.currentMapId, 1, true);
         });
+        const btnVictoryMap = document.getElementById('btn-victory-map-select');
+        if (btnVictoryMap) {
+            btnVictoryMap.addEventListener('click', () => {
+                sounds.playClick();
+                this.dom.modalVictory.classList.add('hidden');
+                this.showMapSelectScreen(this.currentMapId);
+            });
+        }
         document.getElementById('btn-victory-menu').addEventListener('click', () => {
             sounds.playClick();
             this.dom.modalVictory.classList.add('hidden');
@@ -236,7 +319,7 @@ class MazeRunGame {
 
     handleKeyDown(e) {
         // Prevent default scrolling for game keys
-        const gameKeys = ['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight', 'KeyW', 'KeyA', 'KeyS', 'KeyD', 'KeyH', 'KeyP', 'KeyR', 'Escape', 'Space'];
+        const gameKeys = ['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight', 'KeyW', 'KeyA', 'KeyS', 'KeyD', 'KeyH', 'KeyP', 'KeyR', 'KeyM', 'Escape', 'Space'];
         if (gameKeys.includes(e.code)) {
             e.preventDefault();
         }
@@ -271,6 +354,9 @@ class MazeRunGame {
                 case 'KeyR':
                     this.restartLevel(true);
                     break;
+                case 'KeyM':
+                    this.showMapSelectScreen(this.currentMapId);
+                    break;
                 case 'KeyP':
                 case 'Escape':
                     this.togglePause();
@@ -297,7 +383,7 @@ class MazeRunGame {
     }
 
     toggleMute() {
-        const muted = sounds.toggleMute();
+        sounds.toggleMute();
         this.updateMuteButtonUI();
     }
 
@@ -315,20 +401,165 @@ class MazeRunGame {
         this.state = 'START';
         this.isTimerRunning = false;
         this.dom.screenStart.classList.remove('hidden');
+        if (this.dom.screenSelect) this.dom.screenSelect.classList.add('hidden');
         this.dom.screenGame.classList.add('hidden');
     }
 
-    startLevel(index, newVariation = false) {
-        if (index < 0 || index >= MAZE_LEVELS.length) return;
-        this.currentLevelIndex = index;
-        this.level = getLevelDefinition(index + 1, newVariation);
+    showMapSelectScreen(mapId = null) {
+        this.state = 'SELECT';
+        this.isTimerRunning = false;
+        this.dom.screenStart.classList.add('hidden');
+        if (this.dom.screenSelect) this.dom.screenSelect.classList.remove('hidden');
+        this.dom.screenGame.classList.add('hidden');
+        this.dom.modalPause.classList.add('hidden');
+        this.dom.modalLevelComplete.classList.add('hidden');
+        this.dom.modalVictory.classList.add('hidden');
 
-        if (index === 0) {
+        this.renderSelectScreen(mapId || this.currentMapId);
+    }
+
+    renderSelectScreen(activeMapId = 'cyber') {
+        this.selectedTabMapId = activeMapId;
+
+        // Update active tab buttons
+        if (this.dom.tabCyber && this.dom.tabShadow) {
+            this.dom.tabCyber.classList.toggle('active', activeMapId === 'cyber');
+            this.dom.tabShadow.classList.toggle('active', activeMapId === 'shadow');
+
+            const cyberStats = ProgressionManager.getMapStats('cyber');
+            const shadowStats = ProgressionManager.getMapStats('shadow');
+
+            this.dom.tabCyberStars.innerText = '★'.repeat(cyberStats.totalStars) + '☆'.repeat(Math.max(0, 9 - cyberStats.totalStars));
+            this.dom.tabShadowStars.innerText = '★'.repeat(shadowStats.totalStars) + '☆'.repeat(Math.max(0, 9 - shadowStats.totalStars));
+        }
+
+        const mapDef = MAP_DEFINITIONS[activeMapId] || MAP_DEFINITIONS.cyber;
+        const mapStats = ProgressionManager.getMapStats(activeMapId);
+
+        // Update Banner
+        if (this.dom.mapBannerTitle) {
+            this.dom.mapBannerTitle.innerText = `${mapDef.name.toUpperCase()}`;
+            this.dom.mapBannerTitle.style.color = mapDef.accentColor;
+            this.dom.mapBannerDesc.innerText = mapDef.description;
+            this.dom.bannerProgress.innerText = `Completed: ${mapStats.completedCount}/3`;
+            this.dom.bannerScore.innerText = `Score: ${mapStats.totalScore}`;
+        }
+
+        // Render Level Cards
+        if (this.dom.levelCardsContainer) {
+            this.dom.levelCardsContainer.innerHTML = '';
+
+            const levelSpecs = [
+                {
+                    lvl: 1,
+                    difficulty: "EASY",
+                    size: "21x21 GRID",
+                    monsters: "0 Sentry",
+                    targets: "15+ Dead Ends • 15+ Junctions"
+                },
+                {
+                    lvl: 2,
+                    difficulty: "MEDIUM",
+                    size: "27x27 GRID",
+                    monsters: activeMapId === 'cyber' ? "1 Sentry (Grumble)" : "1 Sentry (Nightshade)",
+                    targets: "30+ Dead Ends • 30+ Junctions"
+                },
+                {
+                    lvl: 3,
+                    difficulty: "EXTREME",
+                    size: "35x35 GRID",
+                    monsters: activeMapId === 'cyber' ? "2 Sentries (Spike, Phantom)" : "2 Sentries (Vortex, Specter)",
+                    targets: "45+ Dead Ends • 50+ Junctions"
+                }
+            ];
+
+            levelSpecs.forEach(spec => {
+                const lvlNum = spec.lvl;
+                const isUnlocked = ProgressionManager.isLevelUnlocked(activeMapId, lvlNum);
+                const isCompleted = (mapStats.completedCount >= lvlNum);
+                const starsCount = mapStats.stars[String(lvlNum)] || 0;
+                const bestTime = mapStats.bestTimes[String(lvlNum)];
+                const bestSteps = mapStats.bestSteps[String(lvlNum)];
+
+                const card = document.createElement('div');
+                card.className = `level-card ${isUnlocked ? 'unlocked' : 'locked'} ${isCompleted ? 'completed' : ''} theme-${activeMapId}`;
+
+                const header = document.createElement('div');
+                header.className = 'level-card-header';
+                header.innerHTML = `
+                    <span class="level-num-badge">LEVEL ${lvlNum}</span>
+                    <span class="badge ${isUnlocked ? (isCompleted ? 'badge-success' : 'badge-warning') : 'badge-danger'}">
+                        ${isUnlocked ? (isCompleted ? '✓ COMPLETED' : 'UNLOCKED') : '🔒 LOCKED'}
+                    </span>
+                `;
+
+                const body = document.createElement('div');
+                body.className = 'level-card-body';
+                body.innerHTML = `
+                    <div class="level-card-title">${spec.difficulty} — ${spec.size}</div>
+                    <div class="level-card-subtitle">👾 ${spec.monsters}</div>
+                    <div class="level-specs">
+                        <span class="spec-tag">${spec.targets}</span>
+                    </div>
+                    <div class="level-record-box">
+                        <div class="record-stars">${'★'.repeat(starsCount)}${'☆'.repeat(3 - starsCount)}</div>
+                        <div class="record-line">⏱️ Best Time: <span class="record-val">${bestTime ? this.formatTime(bestTime) : '--:--'}</span></div>
+                        <div class="record-line">👟 Best Steps: <span class="record-val">${bestSteps !== undefined ? bestSteps : '--'}</span></div>
+                    </div>
+                `;
+
+                const playBtn = document.createElement('button');
+                playBtn.className = `btn btn-play-level ${isUnlocked ? (isCompleted ? 'btn-secondary' : 'btn-primary') : 'btn-outline'}`;
+                playBtn.disabled = !isUnlocked;
+                playBtn.innerHTML = isUnlocked
+                    ? (isCompleted ? `🔄 REPLAY LEVEL ${lvlNum}` : `▶ PLAY LEVEL ${lvlNum}`)
+                    : `🔒 LOCKED (Beat L${lvlNum - 1})`;
+
+                if (isUnlocked) {
+                    playBtn.addEventListener('click', () => {
+                        sounds.playClick();
+                        this.startMapLevel(activeMapId, lvlNum, true);
+                    });
+                }
+
+                card.appendChild(header);
+                card.appendChild(body);
+                card.appendChild(playBtn);
+                this.dom.levelCardsContainer.appendChild(card);
+            });
+        }
+    }
+
+    /**
+     * Backward compatible startLevel
+     */
+    startLevel(index, newVariation = false) {
+        this.startMapLevel('cyber', index + 1, newVariation);
+    }
+
+    /**
+     * Primary level starter for both maps
+     * @param {string} mapId ('cyber' or 'shadow')
+     * @param {number} levelNumber (1, 2, or 3)
+     * @param {boolean} newVariation
+     */
+    startMapLevel(mapId = 'cyber', levelNumber = 1, newVariation = false) {
+        this.currentMapId = mapId;
+        this.currentLevelNumber = levelNumber;
+
+        this.level = getLevelDefinition(mapId, levelNumber, newVariation);
+        if (!this.level) {
+            console.error(`Failed to load level ${mapId} ${levelNumber}`);
+            return;
+        }
+
+        if (levelNumber === 1) {
             this.levelResults = [];
             this.totalScore = 0;
         }
 
         this.dom.screenStart.classList.add('hidden');
+        if (this.dom.screenSelect) this.dom.screenSelect.classList.add('hidden');
         this.dom.screenGame.classList.remove('hidden');
         this.dom.modalLevelComplete.classList.add('hidden');
         this.dom.modalVictory.classList.add('hidden');
@@ -340,7 +571,7 @@ class MazeRunGame {
         this.lastFrameTime = performance.now();
 
         // Level intro toast
-        this.showToast(this.level.instructions, 3500);
+        this.showToast(`[${mapId.toUpperCase()}] ${this.level.instructions}`, 3500);
     }
 
     setupLevel() {
@@ -407,7 +638,7 @@ class MazeRunGame {
     restartLevel(newVariation = true) {
         sounds.playClick();
         if (newVariation) {
-            this.level = getLevelDefinition(this.currentLevelIndex + 1, true);
+            this.level = getLevelDefinition(this.currentMapId, this.currentLevelNumber, true);
         }
         this.setupLevel();
         this.state = 'PLAYING';
@@ -445,8 +676,8 @@ class MazeRunGame {
             return;
         }
 
-        // Highlight next 8 steps
-        this.hintPath = fullPath.slice(1, 9);
+        // Highlight next 8-10 steps
+        this.hintPath = fullPath.slice(1, 10);
         this.hintTimer = 5.0; // 5 seconds display
         this.hintsRemaining--;
         sounds.playHint();
@@ -462,7 +693,6 @@ class MazeRunGame {
         this.player.dir = dir;
 
         if (this.player.isMoving) {
-            // Buffer the move for when current step finishes
             this.queuedDirection = dir;
             return;
         }
@@ -481,7 +711,6 @@ class MazeRunGame {
         // Check bounds & wall
         if (nextX < 0 || nextX >= this.width || nextY < 0 || nextY >= this.height || this.grid[nextY][nextX] === 1) {
             sounds.playBump();
-            // Minor bump animation
             this.shakeTimer = 0.08;
             this.shakeMagnitude = 2;
             return;
@@ -499,7 +728,6 @@ class MazeRunGame {
 
     updatePlayerMovement(dt) {
         if (!this.player.isMoving) {
-            // If key is held or queued, trigger next move immediately
             if (this.queuedDirection) {
                 const nextDir = this.queuedDirection;
                 this.queuedDirection = null;
@@ -510,13 +738,11 @@ class MazeRunGame {
             return;
         }
 
-        // Move speed: ~100ms per tile step for crisp arcade feel
-        const stepDuration = 0.11; // 110ms
+        const stepDuration = 0.11; // 110ms per tile step
         this.player.moveProgress += dt / stepDuration;
         this.player.walkPhase += dt * 10;
 
         if (this.player.moveProgress >= 1.0) {
-            // Reached destination tile
             this.player.gridX = this.player.targetX;
             this.player.gridY = this.player.targetY;
             this.player.renderX = this.player.gridX;
@@ -524,10 +750,8 @@ class MazeRunGame {
             this.player.isMoving = false;
             this.player.moveProgress = 0;
 
-            // Check tile events
             this.checkTileEvents();
 
-            // Check queued or held direction
             if (this.queuedDirection) {
                 const nextDir = this.queuedDirection;
                 this.queuedDirection = null;
@@ -536,7 +760,6 @@ class MazeRunGame {
                 this.requestMove(this.currentKeyHeld);
             }
         } else {
-            // Interpolate smoothly
             const p = this.player.moveProgress;
             this.player.renderX = this.player.gridX + (this.player.targetX - this.player.gridX) * p;
             this.player.renderY = this.player.gridY + (this.player.targetY - this.player.gridY) * p;
@@ -569,7 +792,6 @@ class MazeRunGame {
 
     updateMonsters(dt) {
         for (const m of this.monsters) {
-            // Speed in tiles per second
             const speed = m.speed || 1.6;
             m.progress += dt * speed;
 
@@ -578,20 +800,17 @@ class MazeRunGame {
             const nextWp = m.waypoints[nextWpIndex];
 
             if (m.progress >= 1.0) {
-                // Arrived at next waypoint
                 m.progress = 0;
                 m.wpIndex = nextWpIndex;
                 m.x = nextWp.x;
                 m.y = nextWp.y;
 
-                // Ping-pong at route ends
                 if (m.wpIndex >= m.waypoints.length - 1) {
                     m.dir = -1;
                 } else if (m.wpIndex <= 0) {
                     m.dir = 1;
                 }
             } else {
-                // Interpolate
                 m.x = currentWp.x + (nextWp.x - currentWp.x) * m.progress;
                 m.y = currentWp.y + (nextWp.y - currentWp.y) * m.progress;
             }
@@ -622,7 +841,7 @@ class MazeRunGame {
         this.player.targetY = this.startPos.y;
         this.player.isMoving = false;
         this.player.moveProgress = 0;
-        this.player.invulnerableTimer = 1.6; // 1.6s grace period
+        this.player.invulnerableTimer = 1.6;
         this.queuedDirection = null;
 
         this.spawnSparkleParticles(this.player.gridX, this.player.gridY, 12, '#ff3366');
@@ -654,7 +873,8 @@ class MazeRunGame {
         }
 
         const result = {
-            levelNumber: this.level.number,
+            mapId: this.currentMapId,
+            levelNumber: this.currentLevelNumber,
             title: this.level.title,
             time: levelTime,
             steps: levelSteps,
@@ -665,8 +885,11 @@ class MazeRunGame {
         this.levelResults.push(result);
         this.totalScore += levelScore;
 
-        if (this.currentLevelIndex >= MAZE_LEVELS.length - 1) {
-            // Victory after Level 3!
+        // Save progress to ProgressionManager
+        ProgressionManager.markLevelComplete(this.currentMapId, this.currentLevelNumber, result);
+
+        if (this.currentLevelNumber >= 3) {
+            // Conquered all 3 levels of this map!
             setTimeout(() => {
                 this.showVictoryScreen();
             }, 600);
@@ -689,7 +912,11 @@ class MazeRunGame {
     }
 
     nextLevel() {
-        this.startLevel(this.currentLevelIndex + 1);
+        if (this.currentLevelNumber < 3) {
+            this.startMapLevel(this.currentMapId, this.currentLevelNumber + 1, true);
+        } else {
+            this.showVictoryScreen();
+        }
     }
 
     showVictoryScreen() {
@@ -710,6 +937,31 @@ class MazeRunGame {
         document.getElementById('victory-total-time').innerText = this.formatTime(totalTime);
         document.getElementById('victory-total-steps').innerText = totalSteps;
         document.getElementById('victory-total-score').innerText = this.totalScore;
+
+        const mapName = this.currentMapId === 'cyber' ? "CYBER LABYRINTH" : "SHADOW LABYRINTH";
+        if (this.dom.victorySubtitle) {
+            this.dom.victorySubtitle.innerText = `YOU CONQUERED THE ${mapName}!`;
+        }
+
+        // Check if other map is not completed yet, show callout
+        const otherMapId = this.currentMapId === 'cyber' ? 'shadow' : 'cyber';
+        const otherStats = ProgressionManager.getMapStats(otherMapId);
+        if (this.dom.victoryNextMapCallout) {
+            if (!otherStats.isCompleted) {
+                const nextMapName = otherMapId === 'cyber' ? "MAP 1: CYBER LABYRINTH" : "MAP 2: SHADOW LABYRINTH";
+                this.dom.victoryNextMapCallout.innerHTML = `
+                    <p class="callout-title">READY FOR THE NEXT CHALLENGE?</p>
+                    <p class="callout-desc">Master <strong>${nextMapName}</strong> to become the true Maze Champion!</p>
+                `;
+                this.dom.victoryNextMapCallout.classList.remove('hidden');
+            } else {
+                this.dom.victoryNextMapCallout.innerHTML = `
+                    <p class="callout-title" style="color: #00ff88;">👑 DOUBLE CHAMPION!</p>
+                    <p class="callout-desc">You have conquered BOTH Cyber &amp; Shadow Labyrinths!</p>
+                `;
+                this.dom.victoryNextMapCallout.classList.remove('hidden');
+            }
+        }
 
         // Rank determination
         let rank = "S: MAZE LEGEND";
@@ -749,26 +1001,26 @@ class MazeRunGame {
                 y: cy,
                 vx: Math.cos(angle) * speed,
                 vy: Math.sin(angle) * speed,
+                size: 2 + Math.random() * 3,
                 color,
                 life: 0.6 + Math.random() * 0.4,
-                maxLife: 1.0,
-                size: 2 + Math.random() * 3
+                maxLife: 1.0
             });
         }
     }
 
     spawnConfetti() {
         const colors = ['#00f0ff', '#00ff88', '#ffd700', '#ff007f', '#ffffff'];
-        for (let i = 0; i < 80; i++) {
+        for (let i = 0; i < 70; i++) {
             this.particles.push({
                 x: Math.random() * this.canvas.width,
                 y: -10 - Math.random() * 50,
-                vx: -30 + Math.random() * 60,
-                vy: 60 + Math.random() * 120,
+                vx: (Math.random() - 0.5) * 80,
+                vy: 50 + Math.random() * 120,
+                size: 3 + Math.random() * 4,
                 color: colors[Math.floor(Math.random() * colors.length)],
-                life: 3.5,
-                maxLife: 3.5,
-                size: 4 + Math.random() * 4
+                life: 2.5 + Math.random() * 1.5,
+                maxLife: 4.0
             });
         }
     }
@@ -785,18 +1037,21 @@ class MazeRunGame {
         }
     }
 
-    showToast(message, duration = 2000) {
+    showToast(message, durationMs = 2500) {
         this.dom.toast.innerText = message;
         this.dom.toast.classList.remove('hidden');
-        clearTimeout(this.toastTimeout);
-        this.toastTimeout = setTimeout(() => {
+        clearTimeout(this.toastTimer);
+        this.toastTimer = setTimeout(() => {
             this.dom.toast.classList.add('hidden');
-        }, duration);
+        }, durationMs);
     }
 
     updateHUD() {
         if (!this.level) return;
-        this.dom.hudLevelTitle.innerText = `${this.level.title} — ${this.level.subtitle}`;
+
+        const mapTag = this.currentMapId === 'cyber' ? 'CYBER' : 'SHADOW';
+        this.dom.hudLevelTitle.innerText = `[${mapTag}] ${this.level.title}: ${this.level.subtitle}`;
+        this.dom.hudLevelTitle.style.color = this.level.accentColor || '#00f0ff';
         this.dom.hudSteps.innerText = `Steps: ${this.steps}`;
         this.dom.hudTimer.innerText = this.formatTime(this.elapsedTime);
 
@@ -832,13 +1087,13 @@ class MazeRunGame {
 
         // Container bounds
         const container = document.getElementById('canvas-container');
-        const availWidth = container.clientWidth - 20;
-        const availHeight = container.clientHeight - 20;
+        const availWidth = container.clientWidth - 16;
+        const availHeight = container.clientHeight - 16;
 
         // Calculate optimal tile size
         const maxTileW = Math.floor(availWidth / this.width);
         const maxTileH = Math.floor(availHeight / this.height);
-        this.tileSize = Math.max(16, Math.min(52, Math.min(maxTileW, maxTileH)));
+        this.tileSize = Math.max(12, Math.min(52, Math.min(maxTileW, maxTileH)));
 
         // Set canvas dimensions
         this.canvas.width = this.width * this.tileSize;
@@ -847,7 +1102,7 @@ class MazeRunGame {
 
     // Main Game Loop
     loop(currentTime) {
-        const dt = Math.min(0.1, (currentTime - this.lastFrameTime) / 1000); // Clamp dt to prevent huge leaps
+        const dt = Math.min(0.1, (currentTime - this.lastFrameTime) / 1000);
         this.lastFrameTime = currentTime;
 
         if (this.state === 'PLAYING') {
@@ -893,7 +1148,7 @@ class MazeRunGame {
         const ctx = this.ctx;
         ctx.save();
 
-        // Apply screen shake
+        // Screen shake
         if (this.shakeTimer > 0) {
             const sx = (Math.random() - 0.5) * this.shakeMagnitude * 2;
             const sy = (Math.random() - 0.5) * this.shakeMagnitude * 2;

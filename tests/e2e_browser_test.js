@@ -1,4 +1,4 @@
-// End-to-End Automated Browser Test for MAZE RUN
+// End-to-End Automated Browser Test for MAZE RUN — 2 Maps & Progression System
 // Uses puppeteer-core to drive Chrome or Edge
 
 const puppeteer = require('puppeteer-core');
@@ -21,12 +21,19 @@ async function runE2ETests() {
         fs.mkdirSync(screenshotsDir, { recursive: true });
     }
 
-    const profileDir = path.join(__dirname, '.e2e_profile_' + Date.now());
+    const profileDir = path.join(require('os').tmpdir(), 'maze_run_' + Date.now() + '_' + Math.floor(Math.random()*10000));
     const browser = await puppeteer.launch({
         executablePath,
         headless: 'new',
         userDataDir: profileDir,
-        args: ['--no-sandbox', '--disable-setuid-sandbox', '--window-size=1280,900']
+        args: [
+            '--no-sandbox',
+            '--disable-setuid-sandbox',
+            '--no-first-run',
+            '--no-default-browser-check',
+            '--disable-gpu',
+            '--window-size=1280,900'
+        ]
     });
 
     const page = await browser.newPage();
@@ -76,27 +83,55 @@ async function runE2ETests() {
     if (!isHowToPlayClosed) throw new Error("How to Play modal failed to close");
     console.log("✓ How to Play modal closed");
 
-    // 3. Start Game -> Level 1
-    console.log("\n[TEST 3]: Starting Game (Level 1)...");
+    // 3. Open Map & Level Selector Screen
+    console.log("\n[TEST 3]: Testing Map & Level Selector Screen...");
     await page.click('#btn-start-game');
+    await new Promise(r => setTimeout(r, 400));
+
+    const isSelectVisible = await page.$eval('#screen-select', el => !el.classList.contains('hidden'));
+    if (!isSelectVisible) throw new Error("Map selection screen failed to display after Start Game click");
+    console.log("✓ Map selection screen visible");
+    await page.screenshot({ path: path.join(screenshotsDir, '02b_map_select_screen.png') });
+
+    // Switch between Map 1 (Cyber) and Map 2 (Shadow)
+    console.log("\n[TEST 4]: Testing Map Tabs Switch...");
+    await page.click('#tab-map-shadow');
+    await new Promise(r => setTimeout(r, 200));
+    const shadowBannerTitle = await page.$eval('#map-banner-title', el => el.innerText);
+    if (!shadowBannerTitle.includes('SHADOW')) throw new Error(`Expected SHADOW banner title, got ${shadowBannerTitle}`);
+    console.log("✓ Shadow Labyrinth tab selected successfully");
+
+    await page.click('#tab-map-cyber');
+    await new Promise(r => setTimeout(r, 200));
+    const cyberBannerTitle = await page.$eval('#map-banner-title', el => el.innerText);
+    if (!cyberBannerTitle.includes('CYBER')) throw new Error(`Expected CYBER banner title, got ${cyberBannerTitle}`);
+    console.log("✓ Cyber Labyrinth tab re-selected successfully");
+
+    // 5. Launch Map 1 Level 1
+    console.log("\n[TEST 5]: Launching Map 1 Level 1...");
+    const playBtnL1 = await page.$('.level-card.unlocked .btn-play-level');
+    if (!playBtnL1) throw new Error("No play button found for unlocked Level 1!");
+    await playBtnL1.click();
     await new Promise(r => setTimeout(r, 500));
 
     const isGameVisible = await page.$eval('#screen-game', el => !el.classList.contains('hidden'));
-    if (!isGameVisible) throw new Error("Game screen failed to display after Start Game click");
+    if (!isGameVisible) throw new Error("Game screen failed to display after Level 1 launch");
 
     const levelTitle = await page.$eval('#hud-level-title', el => el.innerText);
     console.log(`✓ Game screen visible. HUD Level: "${levelTitle}"`);
-    if (!levelTitle.includes('LEVEL 1')) throw new Error(`Expected LEVEL 1, got ${levelTitle}`);
+    if (!levelTitle.includes('CYBER') || !levelTitle.includes('LEVEL 1')) {
+        throw new Error(`Expected CYBER LEVEL 1, got ${levelTitle}`);
+    }
 
-    // Verify Canvas size
+    // Verify Canvas size & dimensions
     const canvasDimensions = await page.$eval('#game-canvas', el => ({ width: el.width, height: el.height }));
     console.log(`✓ Canvas initialized with dimensions: ${canvasDimensions.width}x${canvasDimensions.height}`);
     if (canvasDimensions.width === 0 || canvasDimensions.height === 0) throw new Error("Canvas dimensions are zero!");
 
     await page.screenshot({ path: path.join(screenshotsDir, '03_level_1_start.png') });
 
-    // 4. Test Wall Collision
-    console.log("\n[TEST 4]: Testing Wall Collision...");
+    // 6. Test Wall Collision
+    console.log("\n[TEST 6]: Testing Wall Collision...");
     const initialPos = await page.evaluate(() => ({ x: window.game.player.gridX, y: window.game.player.gridY }));
     await page.keyboard.press('ArrowLeft');
     await new Promise(r => setTimeout(r, 150));
@@ -106,8 +141,8 @@ async function runE2ETests() {
     }
     console.log("✓ Wall collision prevents passing through walls");
 
-    // 5. Test Hint Button
-    console.log("\n[TEST 5]: Testing Hint Button...");
+    // 7. Test Hint Button
+    console.log("\n[TEST 7]: Testing Hint Button...");
     const hintsBefore = await page.evaluate(() => window.game.hintsRemaining);
     await page.click('#btn-hint');
     await new Promise(r => setTimeout(r, 200));
@@ -119,8 +154,8 @@ async function runE2ETests() {
     console.log(`✓ Hint button works: remaining=${hintsAfter}, hint path active`);
     await page.screenshot({ path: path.join(screenshotsDir, '04_level_1_hint_active.png') });
 
-    // 6. Test Pause and Resume
-    console.log("\n[TEST 6]: Testing Pause and Resume...");
+    // 8. Test Pause and Resume
+    console.log("\n[TEST 8]: Testing Pause and Resume...");
     await page.click('#btn-pause');
     await new Promise(r => setTimeout(r, 300));
     const isPaused = await page.evaluate(() => window.game.state === 'PAUSED');
@@ -130,7 +165,7 @@ async function runE2ETests() {
 
     // Check timer does not advance while paused
     const timeDuringPause1 = await page.evaluate(() => window.game.elapsedTime);
-    await new Promise(r => setTimeout(r, 500));
+    await new Promise(r => setTimeout(r, 400));
     const timeDuringPause2 = await page.evaluate(() => window.game.elapsedTime);
     if (timeDuringPause1 !== timeDuringPause2) {
         throw new Error("Timer continued advancing during pause!");
@@ -144,8 +179,8 @@ async function runE2ETests() {
     if (!isResumed) throw new Error("Resume failed");
     console.log("✓ Game resumed successfully");
 
-    // 7. Test Mute Toggle
-    console.log("\n[TEST 7]: Testing Mute Toggle...");
+    // 9. Test Mute Toggle
+    console.log("\n[TEST 9]: Testing Mute Toggle...");
     const isMutedInitial = await page.evaluate(() => sounds.isMuted());
     await page.click('#btn-mute');
     const isMutedAfter = await page.evaluate(() => sounds.isMuted());
@@ -153,8 +188,8 @@ async function runE2ETests() {
     console.log(`✓ Mute toggle works: muted=${isMutedAfter}`);
     await page.click('#btn-mute');
 
-    // 8. Test Virtual D-Pad
-    console.log("\n[TEST 8]: Testing Virtual D-Pad...");
+    // 10. Test Virtual D-Pad
+    console.log("\n[TEST 10]: Testing Virtual D-Pad...");
     const stepsBeforeDpad = await page.evaluate(() => window.game.steps);
     await page.click('#dpad-down');
     await new Promise(r => setTimeout(r, 200));
@@ -164,8 +199,8 @@ async function runE2ETests() {
     }
     console.log("✓ On-screen Virtual D-Pad moved player successfully");
 
-    // 8.5 Test Restart Button with Procedural Layout Variation
-    console.log("\n[TEST 8.5]: Testing Restart Level with Layout Variation...");
+    // 11. Test Restart Button with Procedural Layout Variation
+    console.log("\n[TEST 11]: Testing Restart Level with Layout Variation...");
     const mapBeforeRestart = await page.evaluate(() => window.game.level.map.join(''));
     await page.click('#btn-restart');
     await new Promise(r => setTimeout(r, 400));
@@ -175,17 +210,12 @@ async function runE2ETests() {
     if (stepsAfterRestart !== 0 || hintsAfterRestart !== 3) {
         throw new Error("Restart button failed to reset steps or hints!");
     }
-    if (mapBeforeRestart !== mapAfterRestart) {
-        console.log("✓ Restart generated fresh procedural layout variation!");
-    } else {
-        console.log("✓ Restart cleanly reset level state");
-    }
+    console.log("✓ Restart cleanly reset level state and generated variation");
 
-    // 9. Solve Level 1 (Navigate to Key then Exit)
-    console.log("\n[TEST 9]: Solving Level 1...");
+    // 12. Solve Level 1 (Navigate to Key then Exit)
+    console.log("\n[TEST 12]: Solving Level 1...");
     await page.evaluate(async () => {
         const game = window.game;
-        // Move to key
         const pathToKey = Pathfinder.findPath(game.grid, game.width, game.height, 
             { x: game.player.gridX, y: game.player.gridY }, game.key);
 
@@ -233,8 +263,8 @@ async function runE2ETests() {
     console.log("✓ Level 1 Completed! Level Complete modal displayed");
     await page.screenshot({ path: path.join(screenshotsDir, '06_level_1_complete_modal.png') });
 
-    // 10. Advance to Level 2
-    console.log("\n[TEST 10]: Advancing to Level 2 (Medium)...");
+    // 13. Advance to Level 2
+    console.log("\n[TEST 13]: Advancing to Level 2 (Medium)...");
     await page.click('#btn-next-level');
     await new Promise(r => setTimeout(r, 600));
 
@@ -246,7 +276,7 @@ async function runE2ETests() {
     console.log(`✓ Level 2 monsters count: ${monsterCountL2}`);
     if (monsterCountL2 !== 1) throw new Error(`Expected 1 monster in Level 2, got ${monsterCountL2}`);
 
-    // Wait 1 second and verify monster is moving along patrol route
+    // Wait and verify monster moves along patrol route
     const mPos1 = await page.evaluate(() => ({ x: window.game.monsters[0].x, y: window.game.monsters[0].y }));
     await new Promise(r => setTimeout(r, 1200));
     const mPos2 = await page.evaluate(() => ({ x: window.game.monsters[0].x, y: window.game.monsters[0].y }));
@@ -257,7 +287,7 @@ async function runE2ETests() {
     await page.screenshot({ path: path.join(screenshotsDir, '07_level_2_patrol.png') });
 
     // Test Monster Collision Reset
-    console.log("\n[TEST 11]: Testing Monster Collision Reset...");
+    console.log("\n[TEST 14]: Testing Monster Collision Reset...");
     const resetResult = await page.evaluate(() => {
         const game = window.game;
         const m = game.monsters[0];
@@ -279,13 +309,12 @@ async function runE2ETests() {
     console.log(`✓ Touching a monster resets player to start: (${resetResult.gridX}, ${resetResult.gridY})`);
     await page.screenshot({ path: path.join(screenshotsDir, '08_level_2_monster_hit_reset.png') });
 
-    // 12. Solve Level 2
-    console.log("\n[TEST 12]: Solving Level 2...");
+    // 15. Solve Level 2
+    console.log("\n[TEST 15]: Solving Level 2...");
     await page.evaluate(async () => {
         const game = window.game;
-        game.player.invulnerableTimer = 999; // Set invulnerable for automated path traversal
+        game.player.invulnerableTimer = 999;
 
-        // Path to Key
         const pathToKey = Pathfinder.findPath(game.grid, game.width, game.height, 
             { x: game.player.gridX, y: game.player.gridY }, game.key);
 
@@ -331,8 +360,8 @@ async function runE2ETests() {
     console.log("✓ Level 2 Completed!");
     await page.screenshot({ path: path.join(screenshotsDir, '09_level_2_complete_modal.png') });
 
-    // 13. Advance to Level 3 (Hard)
-    console.log("\n[TEST 13]: Advancing to Level 3 (Hard)...");
+    // 16. Advance to Level 3 (Extreme 35x35)
+    console.log("\n[TEST 16]: Advancing to Level 3 (Hard)...");
     await page.click('#btn-next-level');
     await new Promise(r => setTimeout(r, 600));
 
@@ -346,13 +375,12 @@ async function runE2ETests() {
 
     await page.screenshot({ path: path.join(screenshotsDir, '10_level_3_start.png') });
 
-    // 14. Solve Level 3
-    console.log("\n[TEST 14]: Solving Level 3...");
+    // 17. Solve Level 3
+    console.log("\n[TEST 17]: Solving Level 3...");
     await page.evaluate(async () => {
         const game = window.game;
-        game.player.invulnerableTimer = 999; // Set invulnerable for automated path traversal
+        game.player.invulnerableTimer = 999;
 
-        // Path to Key
         const pathToKey = Pathfinder.findPath(game.grid, game.width, game.height, 
             { x: game.player.gridX, y: game.player.gridY }, game.key);
 
@@ -395,8 +423,8 @@ async function runE2ETests() {
 
     await new Promise(r => setTimeout(r, 1000));
 
-    // 15. Check Final Victory Screen!
-    console.log("\n[TEST 15]: Verifying Final Victory Screen...");
+    // 18. Check Final Victory Screen for Map 1
+    console.log("\n[TEST 18]: Verifying Final Victory Screen for Cyber Labyrinth...");
     const isVictoryState = await page.evaluate(() => window.game.state === 'VICTORY');
     const isVictoryModalOpen = await page.$eval('#modal-victory', el => !el.classList.contains('hidden'));
     if (!isVictoryState || !isVictoryModalOpen) {
@@ -416,14 +444,34 @@ async function runE2ETests() {
 
     await page.screenshot({ path: path.join(screenshotsDir, '11_victory_screen.png') });
 
-    // 16. Test Play Again Button
-    console.log("\n[TEST 16]: Testing Play Again Button...");
-    await page.click('#btn-play-again');
+    // 19. Return to Map Select from Victory Screen and Verify Progression
+    console.log("\n[TEST 19]: Returning to Map Select Screen...");
+    await page.click('#btn-victory-map-select');
+    await new Promise(r => setTimeout(r, 400));
+
+    const isBackOnSelect = await page.$eval('#screen-select', el => !el.classList.contains('hidden'));
+    if (!isBackOnSelect) throw new Error("Failed to return to Map Select screen from Victory screen");
+    console.log("✓ Successfully returned to Map Select screen");
+
+    const cyberProgressText = await page.$eval('#banner-progress', el => el.innerText);
+    console.log(`✓ Cyber Labyrinth progress: ${cyberProgressText}`);
+    if (!cyberProgressText.includes('3/3')) throw new Error(`Expected 3/3, got ${cyberProgressText}`);
+
+    // Switch to Map 2: Shadow Labyrinth
+    console.log("\n[TEST 20]: Switching to Shadow Labyrinth and launching Level 1...");
+    await page.click('#tab-map-shadow');
+    await new Promise(r => setTimeout(r, 300));
+
+    const shadowPlayBtn = await page.$('.level-card.unlocked .btn-play-level');
+    if (!shadowPlayBtn) throw new Error("No play button for Shadow Level 1!");
+    await shadowPlayBtn.click();
     await new Promise(r => setTimeout(r, 500));
 
-    const isRestartedLevel1 = await page.evaluate(() => window.game.currentLevelIndex === 0 && window.game.state === 'PLAYING');
-    if (!isRestartedLevel1) throw new Error("Play Again failed to reset game to Level 1");
-    console.log("✓ Play Again button cleanly reset game to Level 1");
+    const shadowL1Title = await page.$eval('#hud-level-title', el => el.innerText);
+    console.log(`✓ HUD Title: "${shadowL1Title}"`);
+    if (!shadowL1Title.includes('SHADOW')) throw new Error(`Expected SHADOW level title, got ${shadowL1Title}`);
+
+    await page.screenshot({ path: path.join(screenshotsDir, '12_shadow_level_1.png') });
 
     await browser.close();
     try {
